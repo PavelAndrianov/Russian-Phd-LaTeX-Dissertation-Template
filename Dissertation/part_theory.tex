@@ -1,6 +1,161 @@
 \chapter{Теория}
 \label{chapter_theory}
 
+%Preliminary Definitions
+%Theory
+\section{Основные определения}
+В этом разделе представлены основные определения параллельной программы и достижимых конкретных состояний в программе.
+
+Будем рассматривать простой императивный язык программирования, в котором поддерживаются операторы присваивания (assignment), проверки условия (assumption), захват и освобождение примитивов синхронизации (acquire/release) и создание потоков (thread\_create)\footnote{Реализация основана на инструменте \cpachecker, который работает с программами на языке Си}.
+
+Параллельная программа представляется автоматом потока управления (англ. Control Flow Automaton, CFA), который состоит из множества вершин $L$  и множества соединяющих их ребер $G$ .
+Множество $L$ - это множество всех точек программы (англ. program location), множество $G \subseteq L \times Ops \times L$, где $Ops$ - это множество всех операций программы.
+Так, отдельная дуга $g \in G, g = (l_1, op, l_2)$ моделирует операцию $op$, которая выполняется в программе, когда управление переходит из точки $l_1$ в точку $l_2$.
+Операция создания нового потока создает новый поток с идентификатором из множества $T$ и новый поток начинает свое выполнение из некоторой точки программы из множества $L$.
+Множество всех переменных программы, которые встречаются в операциях $assignment$ и $assumption$ обозначается как $X$.
+Будем считать, что переменные принимают только значения лежащие в $\mathbb{Z}$.
+Подмножество $X$, которое содержит все локальные переменные программы, обозначается как $X^{local}$, а подмножество, содержащее все глобальные переменные, -  $X^{global}$. 
+%(to simplify presentation all threads have the same set of local variables) 
+Операции захвата и освобождения примитивов синхронизации определены над множеством специальных переменных $S: S \cap X = \emptyset$.
+Далее мы будем называть примитив синхронизации, связанный с переменной $s \in S$ блокировкой $s$.
+Переменные из множества $S$ принимают значения из $\mathcal{T}=T \cup \{\bot_T\}$.
+При этом, $s \mapsto t, t \in T$ означает, что блокировка $s$ захвачена потоком $t$, а $s \mapsto \bot_T$ означает, что эта блокировка не захвачена.
+
+\emph{Конкретным состоянием} параллельной программы называется четверка $(c_{pc}, c_l, c_g, c_s)$, где
+\begin{enumerate}
+\item Отображение $c_{pc}: T \to L$ является частичной функцией из идентификаторов потока во множество точек программы.
+Каждое такое состояние задает точку в программе, в которой находится каждый из потоков.
+\item Отображение $c_l: T \to C^{local}$ является частичной функций из множества идентификаторов потока во множество присваиваний локальным переменным их значений. $C^{local}: X^{local} \to \mathbb{Z}$ - отображение, которое задает каждой переменной из $X^{local}$ ее значение из $\mathbb{Z}$.
+\item $c_g: X^{global} \to \mathbb{Z}$ задает значения глобальных переменных программы.
+\item $c_s: S \to \mathcal{T}$ задает значения блокировок. 
+\end{enumerate}
+Множество всех возможных конкретных состояния программы обозначим через $C$.
+
+Отображения $c_{pc}$ и $c_l$ представляют локальные части конкретного состояния для каждого потока, а $c_g$ и $c_s$ представляют глобальную часть конкретного состояния, не зависящую от потока.
+Обозначим $dom$ область определения частичной функции, например, $dom(c_{pc})=\{ t \mid \exists (t, l) \in c_{pc} \land t \in T \land l \in L \}$.
+Будем использовать обозначение $\qdot$ для замены параметра, который является несущественным.
+Например, предыдущее определение может быть записано следующим образом $dom(c_{pc})=\{ t \mid \exists (t, \qdot) \in c_{pc} \land t \in T\}$.
+
+Каждое состояние $c=(c_{pc}, c_l, c_g, c_s)\in C$ должно удовлетворять условию $dom(c_{pc})=dom(c_l)$, которое означает, что области определения локальных частей состояния находятся в консистентном состоянии.
+Будем использовать обозначение $dom(c)$, как область значения локальных частей состояния, то есть $dom(c)=dom(c_{pc})=dom(c_l)$.
+
+Под отношением переходов, помеченным дугой $g$ будем понимать $\tc{g,t} \subseteq C \times G \times T \times C$, где дуга $g \in G$, а идентификатор потока $t \in T$.
+Переход  $c_1 \tc{g,t} c_2, c_1, c_2 \in C$ моделирует переход программы из состояния $c_1$ в состояние $c_2$ при выполнении потоком $t \in T$ операции на дуге $g \in G$.
+
+Для всех $c=(c_{pc}, c_l, c_g, c_s), c'=(c'_{pc}, c'_l, c'_g, c'_s) \in C$, $g = (l, \cdot, l')\in G$, $t\in T$ любой переход $c \tc{g, t} c'$ должен удовлетворять следующим требованиям:
+\begin{enumerate}
+\item Переход начинается в состоянии $c$: $t\in dom(c_{pc}) \land c_{pc}(t)=l$.
+\item При выполнении операции поток $t$ переходит в точку $l'$: $c'_{pc}(t)=l'$.
+\item Каждый переход $c \tc{g,t} c'$ может изменить только локальную часть состояния, которая соответствует потоку $t$ и, возможно, глобальную часть состояния, то есть локальные части других потоков остаются неизменны.
+Формально
+$\forall t'\in T: (t'\neq t) \land (t \in dom(c_{pc})\cap dom(c'_{pc})) \Rightarrow c'_{pc}(t')=c_{pc}(t') \land c'_l(t')=c_l(t')$.
+\end{enumerate}
+
+%define regular semantics
+Обозначим через $eval(c, t, expr)$ значение выражения $expr$ над переменными из $X^{local} \cup X^{global}$ и со значениями этих переменных из конкретного состояния $c \in C$ для потока с идентификатором $t \in T$. %TODO need more?
+
+Далее определим семантику операций в программе.
+
+\subsection{Проверка условия}
+Для дуги $g = (l, assume(expr), l') \in G$, $t\in T$, $l, l' \in L$ существует переход $c \tc{g, t} c'$, $c=(c_{pc}, c_l, c_g, c_s)$, $c'=(c'_{pc}, c'_l, c'_g, c'_s) \in C$ в том и только в том случае, если
+\begin{itemize}
+\item $dom(c)=dom(c')$ -- переход не меняет множество активных потоков;
+\item $eval(c, t, expr) \neq 0$ -- значение проверяемого выражение не равно нулю.
+\end{itemize}
+
+\subsection{Присваивание}
+Для дуги $g = (l, assign(x, expr), l') \in G$, $t\in T$, $l, l' \in L$ существует переход $c \tc{g, t} c'$, $c=(c_{pc}, c_l, c_g, c_s)$, $c'=(c'_{pc}, c'_l, c'_g, c'_s) \in C$ в том и только в том случае, если
+\begin{itemize}
+\item $dom(c)=dom(c')$ -- переход не меняет множество активных потоков;
+\item 
+\begin{align}
+c'_l(t)(x')=
+\begin{cases}
+eval(c, t, expr)& \text{, если $x' = x$} \\
+c_l(t)(x') & \text{, если $x' \in X^{local} \land x'\neq x$}
+\end{cases} \nonumber
+\end{align}
+\item
+\begin{align}
+c'_g(x')=
+\begin{cases}
+eval(c, t, expr)& \text{, если $x' = x$} \\
+c_g(x') & \text{, если $x' \in X^{global} \land x'\neq x$}
+\end{cases} \nonumber
+\end{align}
+\item $c'_s = c_s$ -- блокировки не меняют свои значения.
+\end{itemize}
+
+%define acquire|release operations
+\subsection{Операции с примитивами синхронизации}
+Используем похожее определение на то, которое было дано в~\cite{TAR}. 
+Предполагаем, что операция $acquire(s)$ в потоке $t \in T$, где $s\in S$ - блокировка, имеет следующую семантику: 
+если $s \mapsto \bot_T$ в предыдущем состоянии, тогда $s \mapsto t$ в следующем состоянии, и эта операция (сравнение и изменение состояния блокировки) производится атомарно за один переход.
+%This encoding is essential to prove absence of data races by thread-modular analysis as described in~\cite{}. %qader
+%For example, if you use semantics $if$ $(s==0)$ $s=1$ then thread-modular approach will not work.
+
+Формально, для дуги $g = (l, acquire(s), l') \in G$ и $t\in T$, $l, l' \in L$ существует переход
+$c \tc{g, t} c'$, $c=(c_{pc}, c_l, c_g, c_s)$, $c'=(c'_{pc}, c'_l, c'_g, c'_s) \in C$
+тогда и только тогда, когда 
+\begin{itemize}
+\item $dom(c)=dom(c')$ -- переход не меняет множество активных потоков;
+\item $c'_l=c_l$ -- переход не меняет значения локальных переменных;
+\item $c'_g = c_g$ -- переход не меняет значения глобальных переменных;
+\item $c_s(s) = \bot_T \land c'_s(s)=t \land \forall s'\in S: s'\neq s \Rightarrow c'_s(s')=c_s(s')$ -- никакие другие блокировки не меняют свое значение.
+\end{itemize}
+
+Предполагаем, что операция $release(s)$ в потоке $t \in T$ имеет следующую семантику:
+если в начальном состоянии блокировка $s \in S$ была захвачена тем же потоком, то есть $s \mapsto t$, то в следующем состоянии эта блокировка освобождается, то есть $s \mapsto \bot_T$. Операция проходит атомарно.
+
+Формально, для дуги $g = (l, release(s), l')\in G$ и $t\in T$, $l, l' \in L$ существует переход
+$c \tc{g, t} c'$, $c=(c_{pc}, c_l, c_g, c_s)$, $c'=(c'_{pc}, c'_l, c'_g, c'_s) \in C$ тогда и только тогда, когда 
+\begin{itemize}
+\item $dom(c)=dom(c')$ -- переход не меняет множество активных потоков;
+\item $c'_l(t)=c_l(t)$ -- переход не меняет значения локальных переменных;
+\item $c'_g = c_g$ -- переход не меняет значения глобальных переменных;
+\item $c_s(s)=t \land c_s'(s)=\bot_T \land \forall s'\in S: s'\neq s \Rightarrow c'_s(s')=c_s(s')$ -- никакие другие блокировки не меняют свое значение
+\end{itemize}
+
+%define thread_create
+\subsection{Создание потоков}
+Определим семантику $thread\_create(l_\nu)$ таким образом, чтобы текущий поток при выполнении этого оператора перешел в следующую точку программы после $thread\_create$, а новый поток создается с новым идентификатором $\nu \in T$, который добавляется в локальную часть состояния.
+Созданный поток начинает свое выполнение из точки программы $l_\nu \in L$.
+
+Заметим, что такое определение позволяет поддерживать анализ программ с неограниченным количеством потоков, так как $thread\_create$ может встречаться в цикле.
+
+Для дуги $g = (l, thread\_create(l_\nu), l')$ существует переход
+$c \tc{g, t} c'$, $c=(c_{pc}, c_l, c_g, c_s)$, $c'=(c'_{pc}, c'_l, c'_g, c'_s) \in C$, $\nu \in T$ тогда и только тогда
+\begin{itemize}
+\item $\nu \notin dom(c) \land dom(c') = dom(c) \cup \{ \nu\}$ -- поток с идентификатором $\nu$ добавляется во множество потоков;
+\item $c'_{pc}(t)=l'$ -- счетчик команд в родительском потоке переходит на следующую команду $l'$;
+\item $c'_{pc}(\nu)=l_\nu$ --  счетчик команд в дочернем потоке устанавливается в начальную позицию $l_\nu$;
+\item $c'_l(\nu)=\emptyset$ -- локальные переменные созданного потока не инициализированы;
+\item $c'_l(t)=c_l(t) \land c'_g = c_g \land c'_s = c_s$ -- все остальные части конкретного состояния остаются без изменений.
+\end{itemize}
+
+A complete transition relation $\tcarrow$ is a union over all control-flow edges: 
+$\tcarrow = \displaystyle\bigcup_{g \in G,t \in T} \tc{g,t}$.
+We write $c \tc{g, t} c'$, if $(c, g, t, c') \in \tcarrow$, and
+$c \tc{g} c'$, if $\exists t\in T: c \tc{g,t} c'$, and 
+$c \tcarrow c'$, if $\exists g\in G: c \tc{g} c'$. 
+A set $r \subseteq C$ is called region.
+A concrete state $c_n$ is reachable from a region $r$, denoted by $c_n \in Reach_{\tcarrow}(r)$, if there exists a sequence of concrete states $\langle c_0, c_1, ..., c_n \rangle$ such that $c_0 \in r$ and $\forall i : 1 \leq i \leq n : c_{i-1} \tcarrow c_i$.
+
+%TODO example
+%For example, consider an edge $g = (thread\_create)$ of thread creation: 
+%$(2, c_1^1, c_1^2, c_1^g) \tc{g, 1} (3, c_2^1, c_1^2, c_1^3, c_1^g)$, where the $c_1^3$ is local state of the new thread.
+
+%TODO we demonstrate reachability on data race conditions
+%interesting -- requires at least two threads
+
+%\begin{defn}
+%\label{raceDef}
+%We define a \textbf{data race condition} as a concrete state $c$, such that $\exists c_1, c_2 \in C$, $g_1, g_2 \in G$, $t_1, t_2 \in T$, $t_1 \neq t_2 : c \tc{g_1, t_1} c_1 \land c \tc{g_2, t_2} c_2$ and operations $g_1, g_2$ are performed on the same global variable $x \in X^{global}$ and at least one operation is assignment (i.e. $assign(x, expr)$).
+%\end{defn}
+
+%Note, that acquire/release operations are special ones and operate on lock variables only.
+
+
 \section{Одиночное изображение} \label{sect2_1}
 
 %\newpage

@@ -33,3 +33,59 @@
 \newcommand{\notvakbibtitle}{В прочих изданиях}
 \newcommand{\confbibtitle}{В сборниках трудов конференций}
 \newcommand{\fullbibtitle}{Список литературы} % (ГОСТ Р 7.0.11-2011, 4)
+
+\newcommand{\conc}[1]{[\![ #1 ]\!]}
+\newcommand{\tconc}[2]{[\![ #1 ]\!]_{#2}}
+
+\newcommand{\tcarrow}{\longrightarrow}
+\newcommand{\tatarrow}{\leadsto}
+\newcommand{\taearrow}{\Rightarrow}
+\newcommand{\tc}[1]{\stackrel{#1}{\longrightarrow}}
+\newcommand{\tat}[1]{\stackrel{#1}{\leadsto}}
+\newcommand{\tae}[1]{\stackrel{#1}{\Rightarrow}}
+
+\newcommand{\alias}{\stackrel{\rm a}{=}}
+\newcommand{\ite}[3]{ite.\enskip{#1}.\enskip{#2}.\enskip{#3}}
+
+\newcommand{\arc}[1]{$\stackrel{\rm {#1}}{\longrightarrow}$}
+\newcommand{\pname}[1]{\langle{#1}\rangle}
+
+\newcommand{\reduce}[1]{\stackrel{\rm {#1}}{\longrightarrow}}
+\newcommand{\corresp}{\leftrightarrow}
+
+\newcommand{\ipar}[1]{\par\hspace{#1} }
+\newcommand{\iepar}[2]{\par{#2}\hspace{#1} }
+\newcommand{\abs}[2]{{#1}:{\{#2\}}}
+\newcommand{\trans}[5]{\abs{#1}{#2} \arc{#3} \abs{#4}{#5}}
+
+
+\renewcommand{\theenumi}{\arabic{enumi}}
+\renewcommand{\theenumii}{\arabic{enumii}}
+\renewcommand{\theenumiii}{\arabic{enumiii}}
+
+\renewcommand{\labelenumi}{\theenumi.}
+\renewcommand{\labelenumii}{\theenumi.\theenumii.}
+\renewcommand{\labelenumiii}{\theenumi.\theenumii.\theenumiii.}
+
+\newcommand*{\qdot}{%
+  \mathclose{}%
+  \nonscript\mskip.5\thinmuskip
+  \boldsymbol{.}%
+  \;%
+  \mathopen{}%
+}
+
+\newtheorem{thrm}{Theorem}
+\newtheorem{stmnt}{Statement}
+\newtheorem{defn}{Definition}
+\newtheorem{exmp}{Example}
+
+\makeatletter
+\renewcommand{\p@enumii}{\theenumi.}
+\renewcommand{\p@enumiii}{\theenumi.\theenumii.}
+\makeatother
+
+\newcommand{\cpachecker}{CPAchecker}
+\newcommand{\cpalockator}{CPALockator}
+
+\newcommand{\mynote}[1]{\textsf{$\clubsuit$ #1 $\clubsuit$ }}
