@@ -156,6 +156,235 @@ A concrete state $c_n$ is reachable from a region $r$, denoted by $c_n \in Reach
 %Note, that acquire/release operations are special ones and operate on lock variables only.
 
 
+\section{Адаптивный статический анализ с частичными состояниями}
+\label{sect_cpata}
+
+\newcommand{\update}{update}
+\newcommand{\frontier}{frontier}
+
+Определим формально \emph{адаптивный статический анализ с частичными состояниями} для параллельных программ $\mathbb{D}=(D$, $\Pi$, $\tatarrow$, $merge$, $stop$, $prec$, $\update$, $\frontier$ $)$.
+Он состоит из абстрактного домена $D$, 
+множество точности $\Pi$, 
+отношения переходов $\tatarrow$,
+оператора слияния $merge$, оператор останова $stop$, функции уточненения $prec$, 
+операторов $\update$ и $\frontier$, которые определяют множества частичных состояний для следующего перехода.
+Эти операторы будут подробно рассмотрены далее.
+
+{\textbf 1.} \emph{Абстрактный домен}  $D=(C, \mathcal{E},\conc{\cdot})$ определяется множеством $C$ конкретных состояний, полурешеткой $\mathcal{E}$ абстрактных состояний и функцией конкретизации $\conc{\cdot}$.
+Полурешетка 
+$\mathcal{E}=(E, \top, \bot, \sqsubseteq, \sqcup)$ состоит из (возможно, бесконечного) множества $E$ элементов абстрактного домена, верхнего элемента $\top \in E$, нижнего элемента $\bot \in E$, частичного порядка $\sqsubseteq \subseteq E \times E$ и функции $\sqcup:E \times E \rightarrow E$ (оператор объединения состояний).
+Функция $\sqcup$ возвращает наименьший элемент решетки, который больше, чем каждый из двух ее аргументов, а символы $\top$ и $\bot$ обозначают наибольший и наименьший элемент решетки $E$ соответственно. 
+
+Функция конкретизации $\conc{\cdot}: 2^E \rightarrow 2^C$ отображает каждое множество абстрактных состояний $s \subseteq E$ на множество его значений, то есть на множество конкретных состояний программы, которое оно представляет.
+Заметим, что аргументом функции конкретизации является множество абстрактных состояний, а не одно состояние.
+Это объясняется тем, что суммарное знание для множества частичных состояний может быть больше, чем знание для одного частичного состояния, то есть,  
+$$\forall R\subseteq E: \conc{R} \supseteq \bigcup_{e\in R}{\conc{\{e\}}}$$
+
+Для корректности анализа программы абстрактный домен должен удовлетворять следующим требованиям:
+
+\begin{equation}
+\label{cpa_conc_eq_0}
+\forall R \subseteq \overline{R} \subseteq E: \conc{R} \subseteq \conc{\overline R}
+\end{equation}
+
+\begin{equation}
+\label{cpa_conc_eq_2}
+\forall e, e' \in E, R \subseteq E : e \sqsubseteq e' \implies \conc{R \cup e} \subseteq \conc{R \cup e'}
+\end{equation}
+
+{\textbf 2.} Множество \emph{точности} $\Pi$ определяет уровень детализации абстрактного домена. Анализ использует элементы из $\Pi$, чтобы определять различный уровень точности для различных абстрактных состояний.
+Пара $(e, \pi)$ называется абстрактным состоянием $e$ с точностью $\pi$.
+Операторы на абстрактном домене параметризуются уровнем точности.
+
+Для $R \subseteq E \times \Pi$ обозначаем
+$\conc{R} = \conc{\bigcup_{(e,\pi)\in R}\{e\}}$.
+
+{\textbf 3.} Отношение переходов \emph{transfer} $\tatarrow: 2^{E\times \Pi} \times G \times E \times \Pi$ определяет для каждого множества частичных состояний $\hat R$ следующие возможные абстрактные состояния $e'$ с точностью $\pi$.
+Будем писать $\hat R \tat{g} (e', \pi)$, если $(\hat R, g, e, \pi) \in \tatarrow$ и $\hat R \tatarrow (e', \pi)$ если $\exists g \in G: \hat R \tat{g} (e', \pi)$.
+
+%TODO: do we need g,t on the arrow? 
+%and $e \tatarrow (e', \pi)$ if $\exists g \in G, t \in T: e \tat{g,t} (e', \pi)$.
+
+Требование к отношению переходов в классическом CPA является слишком строгим.
+В некоторых случаях более эффективным является аппроксимировать переходы из $\conc{\hat R}$  в несколько шагов:
+\begin{itemize}
+\item применение переходов из частичных состояний по отдельности;
+\item применение некоторых шагов позже, например, переходов по окружению.
+\end{itemize}
+
+Обозначим $Reach^k$ как
+\begin{equation}
+\label{reach_k}
+\begin{aligned}
+& \forall R \subseteq E: Reach^0(R) = R \\
+\forall k\ge 1:& Reach^{k+1}(R) = \bigcup_{\hat R \subseteq Reach^{k}(R)}{\{(e',\pi') \mid \hat R \tatarrow (e',\pi')\}} \cup Reach^{k}(R) \\
+\end{aligned}
+\end{equation}
+
+Далее мы будем писать $Reach(R) = Reach^1(R)$. 
+
+Требованием к отношению переходов является аппроксимация сверху множества конкретных переходов:
+\begin{equation}
+\label{cpa_transfer_eq}
+\begin{aligned}
+& \exists k \ge 1: \forall R \subseteq E \times \Pi:\\
+& \conc{Reach^k(R)} \supseteq \bigcup_{c \in \conc{R}}{\{c' \mid c \tcarrow c'\}} \\
+\end{aligned}
+\end{equation}
+
+%--------------------------------
+
+{\textbf 4.} Оператор \emph{merge} $merge: E \times E \times \Pi \rightarrow E$ ослабляет второй параметр, используя информацию от первого параметра, и возвращает новое абстрактное состояние с точностью, которая передавалась, как третий параметр.
+Оператор \emph{merge} должен удовлетворять следующим требованиям:
+\begin{equation}
+\label{cpa_merge_eq}
+\begin{aligned}
+&\forall e, e' \in E, \pi \in \Pi :\\
+&e' \sqsubseteq merge(e, e', \pi)
+\end{aligned}
+\end{equation}
+
+{\textbf 5.} Оператор \emph{stop} $stop: E \times 2^{E \times \Pi} \times \Pi \rightarrow \mathbb{B}$ проверяет, является ли абстрактное состояние, передаваемое, как первый параметр с точностью, передаваемой как третий параметр, покрытым множеством абстрактных состояний, которые передаются вторым параметром.
+Оператор останова может, например, проходить по элементам из множества $R$, который передается как второй параметр и искать такой элемент, который больше ($\sqsubset$), чем проверяемый элемент.
+%, or -- if $D$ is a powerset domain\footnote{A powerset domain is an abstract domain s.t. $\tconc{e \sqcup e'}{t} = \tconc{e}{t} \cup \tconc{e'}{t}$} -- can join the elements of $R$ to check if $R$ subsumes the first parameter. 
+Оператор останова должен удовлетворять следующему требованию:
+\begin{equation}
+\label{cpa_stop_eq}
+\begin{aligned}
+&\forall e \in E, R \subseteq E, \pi \in \Pi:\\
+&stop(e, R, \pi) \implies\forall \hat R \subseteq E: \conc{\{e\}\cup \hat R} \subseteq \conc{R \cup \hat R}
+\end{aligned}
+\end{equation}
+
+{\textbf 6.} Функция уточнения $prec:E \times \Pi \times 2^{E \times \Pi} \rightarrow E \times \Pi$ вычисляет новое абстрактное состояние и новую точность для данного абстрактного состояния и множества асбтрактных состояний.
+Эта функция может производить ослабление абстрактного состояния.
+Она должна удовлетворять следующему требованию:
+
+\begin{equation}
+\label{prec_equation}
+\begin{aligned}
+& \forall e, e' \in E, \pi, \pi' \in \Pi, R \subseteq E \times \Pi:\\
+& (e', \pi') = prec(e, \pi, R) \implies e \sqsubseteq e'
+\end{aligned}
+\end{equation}
+
+%--------------------------------
+
+{\textbf 7.} Оператор
+$\update: 2^{2^{E\times \Pi}} \times 2^{E\times \Pi} \times E \times \Pi \times E \times \Pi \rightarrow 2^{2^{E \times \Pi}}$
+заменяет старый элемент с некоторой точностью на новый элемент с новой точностью во множестве необработанных состояний (\emph{waitlist}), который представлен первым параметром ($2^{2^{E\times \Pi}}$) и возвращает новый \emph{waitlist}.
+
+Обозначим $Reach^w(W) = \{(e, \pi) \mid R_0 \tatarrow (e,\pi) \land R_0 \in W\}$.
+Заметим, что 
+\begin{equation}
+\label{reach_w_equation}
+\begin{aligned}
+& Reach^w(W_1 \cup W_2) = Reach^w(W_1) \cup Reach^w(W_2))
+\end{aligned}
+\end{equation}
+
+Оператор \emph{update} должен удовлетворять следующему требованию:
+\begin{equation}
+\label{cpa_update_transfer_eq}
+\begin{aligned}
+& \forall e, e' \in E, \pi, \pi' \in \Pi, W,W' \subseteq 2^{E\times \Pi},  R \subseteq E\times \Pi, e \sqsubseteq e':\\
+& R' = R \setminus \{e\} \cup \{e'\} \land W' = \update(W, R, e, \pi, e',\pi') \\
+& \land ( \forall \overline{R} \subseteq R: \overline{R} \in W \lor (\forall e \in Reach^w(\{\overline{R}\}) \exists e' \in R: e \sqsubseteq e') \implies  \\
+& \forall \overline{R} \subseteq R': \overline{R} \in W' \lor (\forall e \in Reach^w(\{\overline{R}\}) \exists e' \in R': e \sqsubseteq e'))
+\end{aligned}
+\end{equation}
+
+\iffalse %The following text is banned by moderator
+The equation~\ref{cpa_update_transfer_eq} is more general, but for further profs we will use more specific and strict condition.
+
+\begin{equation}
+\label{cpa_update_transfer_eq_power}
+\begin{aligned}
+update(W, R, e, \pi, e', \pi') = \{\widehat{R} \mid \widehat{R} \in W \land (e, \pi) \notin \widehat{R}\} \cup frontier(R', e', \pi')
+\end{aligned}
+\end{equation}
+
+Show that equation~\ref{cpa_update_transfer_eq_power} implies equation~\ref{cpa_update_transfer_eq}.
+Denote $\overline{W} = \{\widehat{R} \mid \widehat{R} \in W \land (e, \pi) \notin \widehat{R}\}$. $W = \overline{W} \cup \{\widehat{R} \mid \widehat{R} \in W \land (e, \pi) \in \widehat{R}\}$.
+$W' = update(W, R, e, \pi, e', \pi') = \{\widehat{R} \mid \widehat{R} \in W \land (e, \pi) \notin \widehat{R}\} \cup frontier(R', e', \pi') = \overline{W} \cup frontier(R', e', \pi')$.
+Denote also $R \setminus \{e\} = \widehat{R}$. Then $R' = \widehat{R} \cup \{e'\}$.
+Get an arbitrary $\overline{R} \subseteq R'$, assume $\forall \overline{R} \subseteq R: \overline{R} \in W \lor Reach(\overline{R}) \subseteq R$ and show that definition~\ref{cpa_update_transfer_eq_power} satisfies the invariant~\ref{cpa_update_transfer_eq}. 
+
+\begin{itemize}
+\item $e \notin \overline{R} \land e \notin Reach^w(\{\overline{R}\})$. The assumption for the $\overline{R}$ holds, i.e.
+\begin{align}
+& \overline{R} \in W \lor Reach^w(\{\overline{R}\}) \subseteq R \leftrightarrow (item) \nonumber \\
+& \leftrightarrow \overline{R} \in \widehat{W} \lor Reach^w(\{\overline{R}\}) \subseteq R \setminus \{e\} \implies \nonumber \\
+& \implies \overline{R} \in W' \lor Reach^w(\{\overline{R}\}) \subseteq R'
+\end{align}
+
+\item $\overline{R} \subseteq \widehat{R} \land e \in Reach^w(\{\overline{R}\})$. For that $\overline{R}$ the assumption holds.
+\end{itemize}
+\fi
+
+{\textbf 8.} Оператор
+$\frontier: 2^{E\times \Pi} \times E \times \Pi \rightarrow 2^{2^{E\times \Pi}}$ возвращает новое множество необработанных состояний для нового элемента с новой точностью.
+
+Оператор \emph{frontier} должен удовлетворять следующему требованию:
+\begin{equation}
+\label{cpa_frontier_transfer_eq}
+\begin{aligned}
+& \forall e \in E, \pi \in \Pi, \widehat{R}, R \subseteq E, \widehat{R} \subseteq (R \cup \{e\}), e\in \widehat{R} : \\ 
+&  
+\widehat{R} \subseteq frontier(R, e, \pi) \lor Reach(\widehat{R}) \subseteq (R \cup \{e\}) \\ 
+\end{aligned}
+\end{equation}
+
+%end of CPA definition
+\section{Алгоритм с частичными состояниями}
+
+\begin{algorithm}[H]
+% General Algorithm
+ \KwData{
+ адаптивный статический анализ с частичными состояниями $\mathbb{D}$,
+ {начальное абстрактное состояние $e_0$ с точностью $\pi_0 \in \Pi$},
+ {множество $reached$ элементов из $E \times \Pi$},
+ {множество $waitlist$ элементов из $2^{E \times \Pi}$}
+ }
+\KwResult{множество достижимых состояний $reached$}
+{\color{blue}
+ $waitlist := \frontier(\emptyset, \emptyset, e_0, \pi_0)$\;
+}
+ $reached := \{e_0,\pi_0\} $\;
+
+ \While{$waitlist \neq \emptyset$}{
+  pop $\widehat{R}$ from $waitlist$\;  
+  \For{each $e'$ in $\widehat{R} \tatarrow (e', \pi')$ }{
+   $(\widehat{e}, \widehat{e})=prec(e',\pi',reached)$\;
+   \For{each $(e'', \pi'') \in reached$}{
+    $e_{new} = merge(\widehat{e}, e'', \widehat{\pi})$\;
+    \If{$e_{new} \neq e''$}{
+{\color{blue}
+     $waitlist := \update(waitlist, reached, e'', \pi'', e_{new}, \widehat{\pi})$\;
+}
+     $reached := reached \setminus{\{(e'', \pi'')\}} \cup \{(e_{new}, \widehat{\pi})\}$\;
+    }
+   }
+   \If{$!stop(\widehat{e}, reached, \widehat{\pi})$}{
+{\color{blue}
+    $waitlist := waitlist \cup \frontier(reached, \widehat{e}, \widehat{\pi})$\;
+}
+    $reached := reached \cup \{(\widehat{e}, \widehat{\pi})\}$\;
+   }
+  }
+ }%repeat
+
+ \caption{$CPA_{PS}(\mathbb{D}, e_0, \pi_0)$}
+ \label{cpata_algorithm_ps}
+\end{algorithm}
+
+\begin{thrm}
+(Soundness) Для заданного адаптивного статического анализа с частичными состояниями $\mathbb{D}$ и начального абстрактного состояния $e_0$ с точностью $\pi_0$, алгоритм $CPA_{PS}$ вычисляет множество абстрактных состояний, которое аппроксимирует сверху множество достижимых конкретных состояний:
+
+$$\conc{CPA_{PS}(\mathbb{D}, e_0, \pi_0)} \supseteq Reach_{\tcarrow}(\conc{\{e_0\}})$$
+
+\end{thrm}
+
 \section{Одиночное изображение} \label{sect2_1}
 
 %\newpage
