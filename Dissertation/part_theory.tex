@@ -1,8 +1,6 @@
 \chapter{Теория}
 \label{chapter_theory}
 
-%Preliminary Definitions
-%Theory
 \section{Основные определения}
 В этом разделе представлены основные определения параллельной программы и достижимых конкретных состояний в программе.
 
@@ -148,10 +146,32 @@ A concrete state $c_n$ is reachable from a region $r$, denoted by $c_n \in Reach
 %TODO we demonstrate reachability on data race conditions
 %interesting -- requires at least two threads
 
-%\begin{defn}
-%\label{raceDef}
-%We define a \textbf{data race condition} as a concrete state $c$, such that $\exists c_1, c_2 \in C$, $g_1, g_2 \in G$, $t_1, t_2 \in T$, $t_1 \neq t_2 : c \tc{g_1, t_1} c_1 \land c \tc{g_2, t_2} c_2$ and operations $g_1, g_2$ are performed on the same global variable $x \in X^{global}$ and at least one operation is assignment (i.e. $assign(x, expr)$).
-%\end{defn}
+\subsection{Ошибка в программе}
+
+Во многих методах статической верификации используется понятие ошибочного состояния. 
+Такие методы решают задачу достижимости и пытаются доказать, что заданное ошибочное состояния недостижимо.
+Примером такого определения является использование конструкций типа assert. 
+В случае нарушения логического условия, записанного в качестве параметра, инструмент фиксирует ошибку.
+
+Такое определение ошибки является достаточно общим, так как позволяет сформулировать различные свойства программы, которые требуется верифицировать. 
+Еще одной важной особенностью является то, что такое определение с одинковым успехом может применяться как к последовательным программам, так и к параллельным. 
+
+Состояние гонки обычно определяются с помощью такой конструкции, как последовательность
+
+\begin{small}
+\begin{lstlisting}
+variable = expression;
+assert(variable == expression);
+\end{lstlisting}
+\end{small}
+
+Основным минусом такого подхода является то, что при поиске состояний гонки  реальных программах не известно, какая именно переменная может модифицироваться из нескольких потоков, а значит, придется расставлять assert после каждой записи в переменную. 
+Поэтому, хотя такое определение ошибки тоже имеет место и поддерживается в предлагаемой теории, дадим более практичное определение.
+
+\begin{defn}
+\label{raceDef}
+Определим \textbf{состояние гонки} как конкретное состояние $c$ такое, что $\exists c_1, c_2 \in C$, $g_1, g_2 \in G$, $t_1, t_2 \in T$, $t_1 \neq t_2 : c \tc{g_1, t_1} c_1 \land c \tc{g_2, t_2} c_2$ и операции $g_1, g_2$ выполняются над одной и той же глобальной переменной $x \in X^{global}$ и хотя бы одна операция является присваиванием (то есть $assign(x, expr)$).
+\end{defn}
 
 %Note, that acquire/release operations are special ones and operate on lock variables only.
 
@@ -385,146 +405,2893 @@ $$\conc{CPA_{PS}(\mathbb{D}, e_0, \pi_0)} \supseteq Reach_{\tcarrow}(\conc{\{e_0
 
 \end{thrm}
 
-\section{Одиночное изображение} \label{sect2_1}
+\begin{proof}
+
+Доказательство состоит из двух частей. Сначала доказывается, что алгоритм~\ref{cpata_algorithm_ps_without_waitlist} без использования структуры waitlist аппроксимирует сверху множество достижимых конкретных состояний. Вторым шагом показывается, что алгоритм~\ref{cpata_algorithm_ps} эквивалентен алгоритму~\ref{cpata_algorithm_ps_without_waitlist}.
+
+\begin{algorithm}[H]
+% General Algorithm without waitlist
+ \KwData{
+ адаптивный статический анализ с частичными состояниями $\mathbb{D}$,
+ {начальное абстрактное состояние $e_0$ с точностью $\pi_0 \in \Pi$},
+ {множество $reached$ из элементов $E \times \Pi$}
+ }
+\KwResult{множество достижимых абстрактных состояний $reached$}
+ $reached := \{e_0,\pi_0\} $\;
+ 
+ \For{each $\widehat{R} \subseteq reached$ }{
+  \For{each $e'$ in $\widehat{R} \tatarrow (e', \pi')$ }{
+   $(\widehat{e}, \widehat{e})=prec(e',\pi',reached)$\;
+   \For{each $(e'', \pi'') \in reached$}{
+    $e_{new} = merge(\widehat{e}, e'', \widehat{\pi})$\;
+    \If{$e_{new} \neq e''$}{
+     $reached := reached \setminus{\{(e'', \pi'')\}} \cup \{(e_{new}, \widehat{\pi})\}$\;
+    }
+   }
+   \If{$!stop(\widehat{e}, reached, \widehat{\pi})$}{
+    $reached := reached \cup \{(\widehat{e}, \widehat{\pi})\}$\;
+   }
+  }
+ }%repeat
+
+ \caption{$\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)$}
+ \label{cpata_algorithm_ps_without_waitlist}
+\end{algorithm}
+
+\begin{enumerate}
+\item Для того чтобы доказать, что $\conc{\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)} \supseteq Reach_{\tcarrow}(\conc{\{e_0\}})$ воспользуемся следующим инвариантом:
+
+\begin{equation}
+\label{cpa_algorithm_invariant}
+\begin{aligned}
+\conc{Reach^k(R)} \supseteq \bigcup_{c \in \conc{R}}{\{c' \mid c \tcarrow c'\}}
+\end{aligned}
+\end{equation}
+
+Требование~\ref{cpa_transfer_eq} гарантирует, что инвариант выполняется на начальном шаге алгоритма и после применения оператора $transfer$.
+Покажем, что операции $prec$, $merge$ и $stop$ также не нарушают инвариант.
+
+\begin{enumerate}
+\item $prec$. Предположим, что $\exists \widehat{R} \subseteq R: \widehat{R} \tatarrow e$ and $$\conc{Reach^k(R \cup \{e\})} \supseteq \bigcup_{c \in \conc{R \cup \{e\}}}{\{c' \mid c \tcarrow c'\}}$$
+Применим оператор $prec$ и получим $\widehat{e} = prec(e, \pi, R)$. Нам нужно показать, что $$\conc{Reach^k(R \cup \{\widehat{e}\})} \supseteq \bigcup_{c \in \conc{R \cup \{e\}}}{\{c' \mid c \tcarrow c'\}}$$
+\begin{align}
+& \conc{Reach^k(R \cup \{\widehat{e}\})} \supseteq (req.~\ref{cpa_transfer_eq}) \supseteq \bigcup_{c \in \conc{R \cup \{\widehat{e}\}}}{\{c' \mid c \tcarrow c'\}} \supseteq \nonumber \\
+& (req.~\ref{prec_equation},~\ref{cpa_conc_eq_2}) \supseteq \bigcup_{c \in \conc{R \cup \{e\}}}{\{c' \mid c \tcarrow c'\}} \nonumber
+\end{align}
+
+\item $merge$. Предположим $\exists \widehat{e} \subseteq R: e'' \neq e_{new} = merge(\widehat{e}, e'', \pi)$ and $$\conc{Reach^k(R \cup \{e''\})} \supseteq \bigcup_{c \in \conc{R \cup \{e''\}}}{\{c' \mid c \tcarrow c'\}}$$
+Нам нужно показать, что $$\conc{Reach^k(R \cup \{\widehat{e}\})} \supseteq \bigcup_{c \in \conc{R \cup \{e''\}}}{\{c' \mid c \tcarrow c'\}}$$
+\begin{align}
+& \conc{Reach^k(R \cup \{\widehat{e}\})} \supseteq (req.~\ref{cpa_transfer_eq}) \supseteq \bigcup_{c \in \conc{R \cup \{\widehat{e}\}}}{\{c' \mid c \tcarrow c'\}} \supseteq \nonumber \\
+& \supseteq (req.~\ref{cpa_merge_eq},~\ref{cpa_conc_eq_2}) \supseteq \bigcup_{c \in \conc{R \cup \{e''\}}}{\{c' \mid c \tcarrow c'\}} \nonumber
+\end{align}
+
+\item $stop$. Предположим $stop(\widehat{e}, R, \pi) = true$ and $$\conc{Reach^k(R \cup \{\widehat{e}\})} \supseteq \bigcup_{c \in \conc{R \cup \{\widehat{e}\}}}{\{c' \mid c \tcarrow c'\}}$$
+Нам нужно показать, что $$\conc{Reach^k(R)} \supseteq \bigcup_{c \in \conc{R \cup \{\widehat{e}\}}}{\{c' \mid c \tcarrow c'\}}$$
+\begin{align}
+& \conc{Reach^k(R \cup \{\widehat{e}\})} \supseteq (req.~\ref{cpa_transfer_eq}) \supseteq \bigcup_{c \in \conc{R \cup \{\widehat{e}\}}}{\{c' \mid c \tcarrow c'\}} \supseteq \nonumber \\
+& \supseteq (req.~\ref{cpa_stop_eq}) \supseteq \bigcup_{c \in \conc{R}}{\{c' \mid c \tcarrow c'\}} \nonumber
+\end{align}
+
+\end{enumerate}
+
+Когда алгорит равершается, выполнено следующее:
+\begin{equation}
+\label{cpa_algorithm_final_invariant}
+\begin{aligned}
+& \forall \widehat{R} \subseteq R: \{e \mid \widehat{R} \tatarrow e\} \subseteq R \implies Reach(R) = R \implies Reach^k(R) = R \supseteq \\
+& \supseteq (req.~\ref{cpa_transfer_eq}) \supseteq \bigcup_{c \in \conc{R}}{\{c' \mid c \tcarrow c'\}}
+\end{aligned}
+\end{equation}
+
+Покажем, что $\forall \{c_i\} \in C: c_0 \in \conc{\{e_0\}} \land \forall 1 \leq k \leq N: c_{k} \tcarrow c_{k+1} \implies \forall 1 \leq k \leq N: c_k \in \conc{R}$ по индукции.
+Алгоритм~\ref{cpata_algorithm_ps_without_waitlist} не удаляет состояния, поэтому$e_0 \in R \lor e_0 \sqsubseteq e' \in R$. Базис индукции выполнен.
+Предположим, что утверждение выполнено для некоторого $n \in \mathbb{N}$:
+\begin{align}
+& \forall 1 \leq k \leq n: c_k \in \conc{R} \nonumber \\ 
+& (inv.~\ref{cpa_algorithm_final_invariant}) \implies \forall c \in \conc{R}: \{c' \mid c \tcarrow c'\} \subseteq \conc{R} \implies c_{k+1} \in \conc{R} \nonumber
+\end{align}
+
+Так, мы показали, что $\conc{\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)} \supseteq Reach_{\tcarrow}(\conc{\{e_0\}})$
+
+\item Теперь нам нужно показать, что $\forall e \in \overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0) \exists e' \in CPA_{PS}(\mathbb{D}, e_0, \pi_0): e \sqsubseteq e$, то есть, алгоритм использующий очередь состояний (waitlist) эквивалентен алгоритму без нее.
+
+Заметим, что итерации алгоритмов абсолютно одинаковые, поэтому изменения полученных состояний являются эквивалентными.
+Единственным отличием является то, что $CPA_{PS}(\mathbb{D}, e_0, \pi_0)$ итерируется по очереди состояний, а $\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)$ -- по всем возможным подмножествам R.
+Два алгоритма могут быть синхронизированы следующим образом: они начинают с одного и того же начального множества $reached$. 
+Каждая итерация алгоритма $CPA_{PS}(\mathbb{D}, e_0, \pi_0)$ повторяется алгоритмом $\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)$. 
+Так как они выполняют одинаковые действия и модифицируют множество $reached$ одинаково, получаемое множество $reached$ будет совпадать у обоих алгоритмов.
+Когда $CPA_{PS}(\mathbb{D}, e_0, \pi_0)$ заканчивает выполнение, $\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)$ продолжает выполнять все оставшиеся итерации.
+
+Теперь нужно показать, что рассмотренных итераций алгоритма $CPA_{PS}(\mathbb{D}, e_0, \pi_0)$ будет достаточно для построения винального множества $reached$.
+Сначала докажем следующий инвариант для всех итераций алгоритмов.
+
+\begin{equation}
+\label{cpa_algorithm_equivalance_invariant}
+\begin{aligned}
+\forall \overline{R} \subseteq R: \overline{R} \in W \lor (\forall e \in \{e \mid \overline{R} \tatarrow e\} \exists e' \in R : e \sqsubseteq e') 
+\end{aligned}
+\end{equation}
+
+Докажем инвариант~\ref{cpa_algorithm_equivalance_invariant} по индукции.
+Для начального шага инвариант выполнен: $R = \{e_0\} \land W = \{\{e_0\}\} \implies R \in W$
+Нам нужно проверить этот инвариант после двух операций, которые модифицируют $waitlist$: $update$ и $frontier$.
+
+\begin{itemize}
+\item $update$. Требования на $update$ как раз означают, что инвариант выполняется после применения этого оператора.
+
+\item $frontier$. Предположим, что инвариант~\ref{cpa_algorithm_equivalance_invariant} выполнен до итерации, возьмем случайное подмножество $\widehat{R} \in W$. 
+Обозначим
+\begin{equation}
+\label{r_new_definition}
+\begin{aligned}
+R_{new} = R \cup \{(e, \pi) \mid \widehat{R} \tatarrow (e, \pi)\} = R \cup Reach(\widehat{R})
+\end{aligned}
+\end{equation}
+
+\begin{equation}
+\label{w_new_definition}
+\begin{aligned}
+W_{new} = W \setminus \{\widehat{R}\} \cup \bigcup_{\widehat{R} \tatarrow (e, \pi)}{frontier(R, e, \pi)}
+\end{aligned}
+\end{equation}
+
+Используя~\ref{w_new_definition} и $(\widehat{R} \in W)$, получаем
+\begin{equation}
+\label{w_new_equation}
+\begin{aligned}
+& W_{new} \cup \{\widehat{R}\} = W \cup \bigcup_{\widehat{R} \tatarrow (e, \pi)}{frontier(R, e, \pi)} 
+\end{aligned}
+\end{equation}
+
+Обозначим $\widehat{W} = W \setminus \{\widehat{R}\}$. Инвариант~\ref{cpa_algorithm_equivalance_invariant} может быть переписан как
+$\forall \overline{R} \subseteq R: \overline{R} \in \widehat{W} \cup \{\widehat{R}\} \lor (\forall e \in \{e \mid \overline{R} \tatarrow e\} \exists e' \in R : e \sqsubseteq e') $
+
+Теперь нужно показать, что
+$\forall \overline{R} \subseteq R_{new}: \overline{R} \in W_{new} \lor(\forall e \in \{e \mid \overline{R} \tatarrow e\} \exists e' \in R : e \sqsubseteq e') $
+Возьмем случайное подмножество $\overline{R} \subseteq R_{new}$. Возможны три варианта:
+\begin{itemize}
+\item $\overline{R} \subseteq R \land \overline{R} \neq \widehat{R}$.
+Предполагая, что инвариант выполнен до итерации, $\overline{R}$ также удовлетворяет новому инварианту: $\overline{R} \in \widehat{W} \lor (\forall e \in \{e \mid \overline{R} \tatarrow e\} \exists e' \in R : e \sqsubseteq e') $
+
+\item $\overline{R} \subseteq R \land \overline{R} = \widehat{R}$. $\{e \mid \overline{R} \tatarrow e\}  = \{e \mid \widehat{R} \tatarrow e\} \subseteq R \cup \{e \mid \widehat{R} \tatarrow e\} \ = (def.~\ref{r_new_definition}) = R_{new}$. Отсюда следует, что $(\forall e \in \{e \mid \overline{R} \tatarrow e\} \exists e' = e \in R : e \sqsubseteq e')$ и инвариант выполнен.
+
+\item $e \in \overline{R} \implies \overline{R} = R' \cup \{e\} \land R' \subseteq R$. Используя требование~\ref{cpa_frontier_transfer_eq}, получаем, что инвариант также выполнен.
+\end{itemize}
+
+Этот инвариант выполнен на всех итерациях алгоритма $CPA_{PS}(\mathbb{D}, e_0, \pi_0)$, включая последнюю, в которой $W = \emptyset$, поэтому $\forall \overline{R} \subseteq R: \forall e \in \{e \mid \overline{R} \tatarrow e\} \exists e' \in R : e \sqsubseteq e'$.
+Теперь покажем, что все остальные операции алгоритма $\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)$ являются бесполезными.
+Пусть $\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)$ нашел подмножество $\widehat{R} \subseteq R: \widehat{R} \tatarrow e \land e \notin R$.
+Используя инвариант мы получаем, что $\exists e' \in R: e \sqsubseteq e'$. So, $\forall e \in \overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0) \exists e' \in CPA_{PS}(\mathbb{D}, e_0, \pi_0): e \sqsubseteq e'$.
+Отсюда следует, что
+
+$\conc{\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)} \subseteq (req.~\ref{cpa_conc_eq_2}) \subseteq \conc{CPA_{PS}(\mathbb{D}, e_0, \pi_0)}$
+
+\end{itemize}
+
+\end{enumerate}
+Мы доказали следующее неравенство:
+
+$$Reach_{\tcarrow}(\conc{\{e_0\}}) \subseteq \conc{\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)} \subseteq \conc{CPA_{PS}(\mathbb{D}, e_0, \pi_0)}$$
+
+\qedsymbol
+\end{proof}
+
+\section{Классический адаптивный статический анализ}
+\label{sect_classic_cpa}
+
+В этой части показывается, что классическая теория адаптивного статического анализа может быть представлена, как частный случай теории адаптивного статического анализа с частичными состояниями.
+
+Для этого мы предоставим реализацию операторов алгоритма с частичными состояниями
+$\mathbb{R}=(D_R$, $\Pi_R$, $\tatarrow_R$, $merge_R$, $stop_R$, $prec_R$, $\update_R$, $\frontier_R)$
+через классические операторы~\cite{Beyer08}: %precision adjustment
+$\mathbb{C} = (D_C$, $\Pi_C$, $\tatarrow_C$, $merge_C$, $stop_C$, $prec_C)$.
+
+{\textbf 1.}
+Классический домен $D_C=(C,\mathcal{E}_C, \conc{\cdot}_C)$, в котором
+$\mathcal{E}_C=(E_C, \top_C, \bot_C, \sqsubseteq_C, \sqcup_C)$.
+
+Определим $D_R$ как $(C,\mathcal{E}_R, \conc{}_R)$, где 
+$\mathcal{E}_R = (E_C, \top_C, \bot_C, \sqsubseteq_C)$ (то есть, $E_R=E_C$).
+
+\begin{equation}
+\label{cpa_classic_conc_eq}
+\begin{aligned}
+\forall R\subseteq E_C: \conc{R}_R = \bigcup_{e\in R}{\conc{e}_C}
+\end{aligned}
+\end{equation}
+(конкретизация множества является объединением конкретизации элементов).
+
+{\textbf 2.} $\Pi_R=\Pi_C$
+
+{\textbf 3.} Отношение переходов.
+Переход $\hat R \tatarrow_R (e', \pi)$ есть в том и только в том случае, если
+$\hat R = \{e\} \land e \tatarrow_C (e',\pi)$.
+По определению~\ref{reach_k}, $$Reach(R) = \bigcup_{\widehat{R} \subseteq R}{\{(e', \pi') \mid \widehat{R} \tatarrow (e', \pi')\}} = \bigcup_{\widehat{e} \in R}{\{(e', \pi') \mid \widehat{e} \tatarrow_C (e', \pi')\}}$$
+
+Заметим, что классический анализ требует
+\begin{equation}
+\label{cpa_classic_transfer_eq}
+\begin{aligned}
+& \forall e \in E, \pi \in \Pi: \\
+& \bigcup_{e \tatarrow_C (e', \pi)}{\conc{e'}} \supseteq \bigcup_{c \in \conc{e}}{\{c' \mid c \tcarrow c'\}}
+\end{aligned}
+\end{equation}
+
+\begin{proof}
+Покажем, что требование~\ref{cpa_transfer_eq} выполнено при $k = 1$.
+
+\begin{align}
+& \conc{Reach(R)} = \bigcup_{e\in Reach(R)}{\conc{e}_C} = \bigcup_{e \in R, e \tatarrow (e', \pi')}{\conc{e'}} \supseteq (req.~\ref{cpa_classic_transfer_eq}) \supseteq \nonumber \\
+& \supseteq \bigcup_{e \in R} {\bigcup_{c \in \conc{e}}{\{c' \mid c \tcarrow c'\}}} = (def.~\ref{cpa_classic_conc_eq}) = \bigcup_{c \in \conc{R}}{\{c' \mid c \tcarrow c'\}} \nonumber
+\end{align}
+\end{proof}
+
+{\textbf 4.} $merge_R = merge_C$
+
+{\textbf 5.} $stop_R = stop_C$
+
+{\textbf 6.} $prec_R = prec_C$
+
+{\textbf 7.}
+$\update_R(waitlist, reached, e, \pi, e', \pi')=$ 
+$waitlist \setminus \{\{(e, \pi)\}\} \cup \{\{(e', \pi')\}\}$
+
+\begin{proof}
+Покажем, что $\update_R$ удовлетворяет условию~\ref{cpa_update_transfer_eq}.
+
+$$ W' = W \setminus \{\{(e, \pi)\}\} \cup \{\{(e', \pi')\}\}$$
+
+Предположим, что 
+$\forall \overline{R} \subseteq R: \overline{R} \in W \lor (\forall e \in Reach^w(\{\overline{R}\}) \exists e' \in R: e \sqsubseteq e')$ 
+и покажем, что
+$\forall \overline{R} \subseteq R': \overline{R} \in W \lor (\forall e \in Reach^w(\{\overline{R}\}) \exists e' \in R': e \sqsubseteq e')$
+
+Возьмем случайное множество $\overline{R} \subseteq R'$. Возможны три варианта:
+
+\begin{itemize}
+\item $|\overline{R}| > 1$. Это означает, что $Reach^w(\{\overline{R}\}) = \emptyset \subseteq R$.
+\item $\overline{R} = \{\overline{e}\} \land \overline{e} \neq e'$.
+\begin{itemize}
+\item $e \notin Reach(\{\overline{R}\})$. Для этого $\overline{e}$ начальное предположение также выполнено.
+\item $e \in Reach(\{\overline{R}\})$. После выполнения $update$ $e \notin R$, но $\exists e' \in R: e \sqsubseteq e'$ и инвариант выполнен.
+\end{itemize}
+\item $\overline{R} = \{e'\}$. $\{\{(e', \pi')\}\} \in W'$ по определению оператора $update$.
+\end{itemize}
+
+\end{proof}
+
+
+{\textbf 8.} 
+$\frontier_R(reached, e, \pi)=$
+$\{\{(e, \pi)\}\}$
+
+\begin{proof}
+Покажем, что $\frontier_R$ удовлетворяет условию~\ref{cpa_frontier_transfer_eq}.
+Нам нужно показать, что
+$\forall \widehat{R} \subseteq R \cup \{e\} \land e \in \widehat{R}: \widehat{R} \subseteq frontier(R, e, \pi) \lor Reach^w(\{\widehat{R}\}) \subseteq R \cup \{e\}$. 
+Возьмем случайное множество $\widehat{R} \in R \cup \{e\} \land e \in \widehat{R}$. Возможны два варианта:
+
+\begin{itemize}
+\item $|\overline{R}| > 1$. Это означает, что $Reach^w(\{\overline{R}\}) = \emptyset \subseteq R$.
+\item $\overline{R} = \{(e, \pi)\}$. $\{(e, \pi)\} \in \{\{(e, \pi)\}\} = frontier(R, e, \pi)$.
+\end{itemize}
+
+Требование выполнено.
+
+\end{proof}
+
+\newcommand{\IR}{IR}
+\newcommand{\epp}{\mathrel{\bigoplus}}
+\newcommand{\conctm}[1]{\conc{#1}_{TM}}
+
+\section{Адаптивный статический анализ с раздельным рассмотрением потоков}
+\label{sect_tm_with_io}
+
+В этом разделе определяется анализ с раздельным рассмотрением потоков (thread-modular analysis) $\mathcal{TM}$ с частичными абстрактными состояниями $E$ и эффектами окружения $\IR$.
+
+$\mathcal{TM}=(D_{TM},$ $\Pi_{TM}, \tatarrow_{TM},$ $merge^E_{TM}, stop^E_{TM},$ $merge^I_{TM}, stop^I_{TM},$ $prec^E_{TM}, prec^I_{TM},$ $compatible_{TM})$.
+
+{\textbf 1.}
+Абстрактный домен $D_{TM} = (C, \mathcal{E}, \mathcal{I}, \epp)$.
+
+Полурешетка $\mathcal{E}=(E, \sqcup^E, \sqsubseteq^E, \top^E, \bot^E)$ частичных состояний.
+
+%TODO это не полурешетка. Что делать с тау и эпсилон?
+Полурешетка %?is it?
+$\mathcal{I}=(\IR, \sqcup^I, \sqsubseteq^I, \top^I, \bot^I)$ эффектов окружения.
+Обозначим $\tau=\bot^I$ эффект окружения такое, который обозначает переход в потоке.
+Кроме того, нам потребуется пустой эффект $\varepsilon$, который не меняет ничего и всегда имеет переход$e \tat{\varepsilon} (e, \pi))$.
+
+Проверка совмествности состояний $compatible^E: 2^E \to Bool$ возвращает $true$, если частичные состояния могут быть частями одного состояния.
+Оператор \emph{compatible} используется для удобства.
+Значение оператора сильно связано со значением оператора $\epp$.
+
+%TODO: update requirements!
+Требования!
+
+Функция конкретизации суммирует совместные состояния
+$\epp: 2^{E \times T} \to 2^C$.
+
+Требования
+
+\begin{equation}
+\label{cpa_tm_abstract_domain_2}
+\begin{aligned}
+& \forall e \sqsubseteq e' \in E, e_1, \dots e_n \in E, t_0,t_1,\dots,t_n \in T, t_i \neq t_j : \\
+& \epp 
+\begin{pmatrix}
+\begin{pmatrix}
+e \\
+t_0 
+\end{pmatrix}& ,
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}&,
+\dots& ,
+\begin{pmatrix}
+e_n \\
+t_n 
+\end{pmatrix}
+\end{pmatrix} 
+\subseteq \epp
+\begin{pmatrix}
+\begin{pmatrix}
+e' \\
+t_0 
+\end{pmatrix}& ,
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}&,
+\dots& ,
+\begin{pmatrix}
+e_n \\
+t_n 
+\end{pmatrix}
+\end{pmatrix} 
+\end{aligned}
+\end{equation}
+
+Обозначим
+\begin{equation}
+\begin{aligned}
+\forall R\subseteq E: \conctm{R} = 
+\bigcup_{k}
+{\bigcup_{e_1,\dots,e_k \in R \cap E}{
+\bigcup_{
+\begin{array}{c}
+t_1,\dots,t_k \in T \\
+t_i \neq t_j
+\end{array}
+} {
+\epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}&,
+\dots& ,
+\begin{pmatrix}
+e_k \\
+t_k 
+\end{pmatrix}
+\end{pmatrix} 
+}
+}
+}
+\end{aligned}
+\end{equation}
+
+%Such complicated definition is needed for potentially infinite concrete states, which are successfully hold with finite abstract states. Do not replace with sets!
+
+\begin{proof}
+Покажем, что требования \ref{cpa_conc_eq_0}, \ref{cpa_conc_eq_2} выполнены.
+
+\begin{align}
+\conctm{R} = \bigcup_{k}{\bigcup_{
+e_1,\dots,e_k \in R \cap E}{ 
+\bigcup_{
+\begin{array}{c}
+t_1,\dots,t_k \in T \\
+t_i \neq t_j
+\end{array}
+} {
+\epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}&,
+\dots& ,
+\begin{pmatrix}
+e_k \\
+t_k 
+\end{pmatrix}
+\end{pmatrix} 
+}
+}
+} \subseteq \nonumber \\
+\subseteq \bigcup_{k}{\bigcup_{
+e_1,\dots,e_k \in \overline{R} \cap E}{
+\bigcup_{
+\begin{array}{c}
+t_1,\dots,t_k \in T \\
+t_i \neq t_j
+\end{array}
+} {
+\epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}&,
+\dots& ,
+\begin{pmatrix}
+e_k \\
+t_k 
+\end{pmatrix}
+\end{pmatrix} 
+}
+}
+} = \conctm{\overline{R}} \nonumber
+\end{align}
+
+Предположим, что $e \sqsubseteq e' \in E$
+\begin{align}
+\conctm{R \cup e} = \bigcup_{k}{\bigcup_{
+e_1,\dots,e_k \in R \cap E \cup \{e\}}{
+\bigcup_{
+\begin{array}{c}
+t_1,\dots,t_k \in T \\
+t_i \neq t_j
+\end{array}
+} {
+\epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}&,
+\dots& ,
+\begin{pmatrix}
+e_k \\
+t_k 
+\end{pmatrix}
+\end{pmatrix} 
+}
+}
+} \subseteq (req.~\ref{cpa_tm_abstract_domain_2}) \subseteq \nonumber \\
+\subseteq \bigcup_{k}{\bigcup_{
+e_1,\dots,e_k \in R \cap E \cup \{e'\}}{
+\bigcup_{
+\begin{array}{c}
+t_1,\dots,t_k \in T \\
+t_i \neq t_j
+\end{array}
+} {
+\epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}&,
+\dots& ,
+\begin{pmatrix}
+e_k \\
+t_k 
+\end{pmatrix}
+\end{pmatrix} 
+}
+}
+} = \conctm{R \cup \{e'\}} \nonumber
+\end{align}
+\end{proof}
+
+{\textbf 2.}
+$\Pi_{TM}$ множество точности.
+
+{\textbf 3.}
+Отношение переходов
+$\tatarrow: E\times \IR \times G \times \{E\cup I\} \times \Pi$
+сопоставляет каждое состояния $e$ и некоторый эффект окружения $i$ с новым состоянием $e'$ и точностью $\pi$. 
+
+Будем использовать обозначение $e \tat{i, g} (e', \pi)$ для $(e, i, g, e', \pi) \in \tatarrow$
+и $e \tat{i} (e', \pi)$ если $\exists g \in G: e \tat{i, g} (e', \pi)$.
+
+Переход в потоке $\tau$ получает следующее состояние $e': e \tat{\tau} e'$ и эффект окружения $i': e \tat{\tau} i'$, который предствяет переход в окружении.
+
+Отношение переходов должно удовлетворять следующему условию:
+\begin{equation}
+\label{transfer_tm_ir}
+\begin{aligned}
+& \forall R \subseteq E:\\
+& 
+\left[\!\left[
+\begin{array}{c}
+R\\
+\bigcup_{e\in R}{\{e' \mid e \tat{\tau} e'\}}\\
+\bigcup_{e,\hat e\in R}{\{e'' \mid e \tat{\tau} i' \land \hat e \tat{i'} e''\}}\\
+\end{array}
+\right]\!\right]_{TM}
+\supseteq \bigcup_{c \in \conctm{R}}{\{c' \mid c \tcarrow c'\}}
+\end{aligned}
+\end{equation}
+Отношение переходов аппроксимирует сверху все переходы из множества достижимости применением
+\begin{enumerate}
+\item перехода в потоке ($e \tat{\tau} e'$) и 
+\item перехода в окружении, полученного на основе перехода в потоке ($i': e \tat{\tau} i'$ ), к другим достижимым состояниям $\hat e \tat{i'} e''$.
+\end{enumerate}
+
+Требование~\ref{cpa_transfer_eq} очевидно выполнено для $k = 2$.
+
+Теперь представим более сильное условие.
+\begin{equation}
+\label{transfer_tm_ir_stronger}
+\begin{aligned}
+& \forall c, c' \in C, g \in G, t \in T, c \tc{g,t} c' \\
+& g \neq thread\_create:\\
+& \exists t_1, \dots, t_n \in T, t_i \neq t_j: \\
+& c \in \epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_n \\
+t_n 
+\end{pmatrix}
+\end{pmatrix} \implies 
+c' \in \epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1' \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_n' \\
+t_n 
+\end{pmatrix}
+\end{pmatrix}, \\
+&\forall 1 \leq k \leq n, e_k \tat{i'} e_k' \land i' \in \begin{cases}
+\{\tau\}, &\text{$t_k = t$}\\
+\{i' \mid e_k \tat{\tau} i'\},  &\text{$t_k \neq t$}
+\end{cases}\\
+& g = thread\_create:\\
+& \exists t_1, \dots, t_n \in T, t_i \neq t_j: \\
+& c \in \epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_n \\
+t_n 
+\end{pmatrix}
+\end{pmatrix} \implies 
+c' \in \epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1' \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_{n+1}' \\
+t_{n+1} 
+\end{pmatrix}
+\end{pmatrix}, \\
+&\forall 1 \leq k \leq n, e_k \tat{i'} e_k' \land i \in \begin{cases}
+\{\tau\}, &\text{$t_k = t$}\\
+\{i' \mid e_k \tat{\tau} i'\},  &\text{$t_k \neq t$}
+\end{cases} \\
+& e_k \tat{\tau} e_{n+1} \land k: t_k = t
+\end{aligned}
+\end{equation}
+
+{\textbf 4.}
+Оператор слияния для частичных состояний $merge^E_{TM}: E \times E \times \Pi \rightarrow E$ ослабляет второй параметр, используя информацию от первого параметра и возвращает новое абстрактное состояние с точностью, передаваемой, как третий параметр.
+Оператор слияния должен удовлетворять следующему требованию:
+\begin{equation}
+\label{cpa_merge_tm_e_eq}
+\begin{aligned}
+&\forall e, e' \in E, \pi \in \Pi :\\
+&e' \sqsubseteq^E merge^E_{TM}(e, e', \pi)
+\end{aligned}
+\end{equation}
+
+{\textbf 5.}
+Оператор слияния для эффектов окружения $merge^I_{TM}: \IR \times \IR \times \Pi \rightarrow \IR$ ослабляет второй параметр, используя информацию от первого параметра и возвращает новое абстрактное состояние с точностью, передаваемой, как третий параметр.
+Оператор слияния должен удовлетворять следующему требованию:
+\begin{equation}
+\label{cpa_merge_tm_i_eq}
+\begin{aligned}
+&\forall i, i' \in IR, \pi \in \Pi :\\
+&i' \sqsubseteq^I merge^I_{TM}(i, i', \pi)
+\end{aligned}
+\end{equation}
+
+{\textbf 6.} Оператор останова для частичных состояний $stop^E_{TM}: E \times 2^{E} \times \Pi \rightarrow \mathbb{B}$ проверяет, является ли абстрактное состояние, передаваемое как первый параметр с точностью, передаваемой как третий параметр, покрытым множеством абстрактных состояний, передаваемым как второй параметр.
+
+Оператор останова должен удовлетворять следующему условию:
+\begin{equation}
+\label{cpa_stop_tm_e_eq}
+\begin{aligned}
+&\forall e \in E, R \subseteq E, \pi \in \Pi:\\
+&stop^E_{TM}(e, R, \pi) \implies\forall \hat R \subseteq E: \conctm{\{e\}\cup \hat R} \subseteq \bigcup_{R'\subseteq R}{\conc{R' \cup \hat R}}
+\end{aligned}
+\end{equation}
+
+{\textbf 7.} Оператор останова для эффектов окружения $stop^I_{TM}: \IR \times 2^{\IR} \times \Pi \rightarrow \mathbb{B}$ проверяет, является ли эффект окружения, передаваемый как первый параметр с точностью, передаваемой как третий параметр, покрытым множеством эффектов окружения, передаваемым как второй параметр.
+
+Оператор останова должен удовлетворять следующему условию:
+\begin{equation}
+\label{cpa_stop_tm_i_eq}
+\begin{aligned}
+&\forall i \in \IR, I \subseteq \IR, \pi \in \Pi:\\
+&stop^I_{TM}(i, I, \pi) \implies\exists i'\in I: i \sqsubseteq^I i'
+\end{aligned}
+\end{equation}
+
+{\textbf 8.} Оператор настройки точности для состояний $prec_{TM}:E \times \Pi \times 2^{E \times \Pi} \rightarrow E \times \Pi$ вычисляет новое абстрактное состояние и новую точность для данного абстрактного состояния, точности и множества абстракных состояний.
+
+Оператор настройки точности должен удовлетворять следующим требованиям:
+\begin{equation}
+\label{prec_tm_e_equation}
+\begin{aligned}
+& \forall e, e' \in E, \pi, \pi' \in \Pi, R \subseteq E \times \Pi:\\
+& (e', \pi') = prec^E_{TM}(e, \pi, R) \implies e \sqsubseteq^E e'
+\end{aligned}
+\end{equation}
+
+{\textbf 9.} Оператор настройки точности для эффектов окружения $prec_{TM}:\IR \times \Pi \times 2^{\IR \times \Pi} \rightarrow \IR \times \Pi$ 
+вычисляет новый эффект окружения и новую точность для данного эффекта окружения, точности и множества эффектов окружения.
+
+Оператор настройки точности должен удовлетворять следующим требованиям:
+\begin{equation}
+\label{prec_tm_i_equation}
+\begin{aligned}
+& \forall i, i' \in \IR, \pi, \pi' \in \Pi, R \subseteq \IR \times \Pi:\\
+& (i', \pi') = prec^I_{TM}(i, \pi, R) \implies i \sqsubseteq^I i'
+\end{aligned}
+\end{equation}
+
+{\textbf 10.} $compatible_{TM}: E \times \IR \to \mathbb{B}$.
+Оператор проверки совмествности должен удовлетворять следующему требованию:
+\begin{equation}
+\label{compatible_tm_equation}
+\begin{aligned}
+& \forall e \in E, i \in \IR:\\
+& \exists e': e \tat{i} e' \implies compatible_{TM}(e,i)
+\end{aligned}
+\end{equation}
+
+\subsection{Реализация of $\mathbb{R}$}
+\SetKwProg{Fn}{Function}{}{}
+
+В этом разделе представлена реализация анализа с раздельным рассмотрением потоков 
+$\mathcal{TM}=(D_{TM},$ $\Pi_{TM}, \tatarrow_{TM},$ $merge^E_{TM}, stop^E_{TM},$ $merge^I_{TM}, stop^I_{TM},$ $prec^E_{TM},prec^I_{TM},$ $compatible_{TM})$.
+в общей теории анализа с частичными состояниями
+$\mathbb{R}=(D_R$, $\Pi_R$, $\tatarrow_R$, $merge_R$, $stop_R$, $prec_R$, $\update_R$, $\frontier_R)$
+
+
+{\textbf 1.} Абстрактный домен $D_R = (C_R,\mathcal{E}_R,\conc{\cdot}_R)$, where $\mathcal{E}_R=(E_R,\top_R, \bot_R, \sqsubseteq_R)$ определяется как
+\begin{itemize}
+\item $C_R = C$,
+\item $E_R = E \cup \IR$,
+\item $\top_R = \top^E$,
+\item $\bot_R = \bot^E$,
+\item $e_1 \sqsubseteq_R e_2$
+\begin{itemize}
+\item если $e_1,e_2 \in E$, тогда $e_1 \sqsubseteq^E e_2$,
+\item если $e_1,e_2 \in \IR$, тогда $e_1 \sqsubseteq^I e_2$,
+\item false в ином случае.
+\end{itemize}
+\item Функция конкретизации 
+$\forall R\subseteq E: \conc{R}_R = \conctm{R}$
+\end{itemize}
+
+{\textbf 2.} Множество точности $\Pi_R = \Pi_{TM}$.
+
+{\textbf 3.} Отношение переходов $\tatarrow_{R}$
+Переход $R \tatarrow_{R} e'$ существует, если существует $e, i\in R, e\in E, i \in \IR: e \tat{i}_{TM} e'$.
+%TODO Не нужна мощность множества 2? Любое множество?
+
+Для формулы~\ref{reach_k} 
+
+\begin{equation}
+\label{cpa_tm_transfer}
+\begin{aligned}
+& Reach(R) = R \cup \bigcup_{e \in R \cap E, i \in I \cap \IR}{\{(e', \pi') \mid e \tat{i}_{TM} (e', \pi')\}}
+\end{aligned}
+\end{equation}
+
+{\textbf 4.}
+$\hat e = merge_{R}(e,e')$
+\begin{itemize}
+\item если $e,e' \in E$, то $\hat e = merge^E_{TM}(e, e')$,
+\item если $e,e' \in \IR$, то $\hat e = merge^I_{TM}(e, e')$,
+\item $\hat e = e'$ в ином случае.
+\end{itemize}
+
+{\textbf 5.}
+$stop_{R}(e,R)=$
+\begin{itemize}
+\item если $e \in E$, то $stop^E_{TM}(e, R\cap E)$,
+\item в ином случае ($e \in I$) и $stop^I_{TM}(e, R\cap I)$.
+\end{itemize}
+
+{\textbf 6.}
+$prec_{R}(e,\pi)=$
+\begin{itemize}
+\item если $e \in E$ то $prec^E_{TM}(e, \pi)$,
+\item в ином случае $e \in \IR$ и $prec^I_{TM}(e, \pi)$.
+\end{itemize}
+
+{\textbf 7.} %update
+%----------------------------
+Оператор update представлен на алгоритме~\ref{cpatm_ir_update}.
+\begin{algorithm}
+  \Fn{$\update_R(w, R, e, \pi, e', \pi'))$}{
+    $w' := w$\;
+    \If {$e,e'\in E$} {
+        //remove old states\;
+        $w' = w' \setminus \{\{((e,\cdot),\cdot)\}\}$\;
+        //apply step in thread\;
+        $w' = w' \cup \{\{((e',\tau),\pi')\}\}$\;
+        \For{each $(i,\cdot) \in R, i \in \IR$}{
+            \If {$compatible_{TM}(e',i)$}{
+                //apply ir\;
+                $w' = w' \cup \{\{((e',i),\pi')\}\}$\;
+            }
+        }
+    }
+    \If {$e,e'\in \IR$} {
+    	Let $i=e, i'=e'$\;
+    	//remove old ir\;
+        $w' = w' \setminus \{((\cdot,i),\cdot)\}$\;
+        \For{each $(\hat e,\hat \pi) \in R, \hat e \in E$}{
+            \If {$compatible_{TM}(\hat e, i')$}{
+                //apply ir\;
+                $w' = w' \cup \{\{((\hat e,i'),\hat \pi)\}\}$\;
+            }
+        }        
+    }
+    \Return{$w'$}\;
+  } %update
+ \caption{Реализация оператора $\update_R$}
+ \label{cpatm_ir_update}
+\end{algorithm}
+
+Докажем, что алгоритм~\ref{cpatm_ir_update} удовлетворяет условию~\ref{cpa_update_transfer_eq}.
+Рассмотрим $e,e' \in E$. Для другого случая $i,i' \in \IR$ доказательство будет тем же самым.
+
+\begin{proof}
+
+%Reference to the algorithm, should be requirement?
+Заметим, что в соответствии с алгоритмом~\ref{cpata_algorithm_ps} $e \in R$. Обозначим
+\begin{align}
+\widehat{R} & = R \setminus \{e\} \nonumber \\
+R' & = R \setminus \{e\} \cup \{e'\} = \widehat{R} \cup \{e'\} \nonumber \\
+W' & = update(W, R, e, \pi, e', \pi') = \nonumber \\
+& = W \setminus \{\{((e, i), \pi)\} \mid i \in R \cap IR \land compatible_{TM}(e, i)\} \nonumber \\
+& \cup \{\{((e', i), \pi)\} \mid i \in R \cap IR \land compatible_{TM}(e', i)\}  \nonumber \\
+\hat{W} & = W \setminus \{\{((e, i), \pi)\} \mid i \in R \cap IR \land compatible_{TM}(e, i)\} \nonumber \\
+W & \subseteq \hat{W} \cup \{\{((e, i), \pi)\} \mid i \in R \cap IR \land compatible_{TM}(e, i)\} \nonumber
+\end{align}
+
+Предположим
+$\forall \overline{R} \subseteq R: \overline{R} \in W \lor (\forall e \in Reach^w(\{\overline{R}\}) \exists e' \in R: e \sqsubseteq e'$ 
+(precondition~\ref{cpa_update_transfer_eq}) и покажем, что
+$\forall \overline{R} \subseteq R': \overline{R} \in W \lor (\forall e \in Reach^w(\{\overline{R}\}) \exists e' \in R': e \sqsubseteq e')$
+Возьмем случайное множество $\widehat{R} \subseteq R'$. Возможны три варианта:
+
+\begin{itemize}
+\item $|\widehat{R}| \neq 2$. Эо означает $Reach^w(\{\widehat{R}\}) = \emptyset \subseteq R$.
+\item $\widehat{R} = \{(\overline{e}, i)\} \land \overline{e} \neq e' \land i \in IR$. Для этого $\overline{e}$ начальное условие выполнено:
+\begin{itemize}
+\item $e \notin Reach^w(\widehat{R})$ - предположение не изменяется
+\item $e \in Reach^w(\widehat{R}) \implies \exists e' \in R': e \sqsubseteq e'$ 
+\end{itemize}
+\item $\widehat{R} = \{(e', i)\}$. $\{\{(e', \pi')\}\} \in W'$ по определению оператора $update$.
+\end{itemize}
+
+\end{proof}
+
+{\textbf 8.} %frontier
+Оператор $frontier$ предствлен на алгоритме~\ref{cpatm_ir_frontier}.
+\begin{algorithm}
+  \Fn{$\frontier_R(w, R, e, \pi))$}{
+    $w' := w$\;
+    \If {$e\in E$} {
+        //apply step in thread\;
+        $w' = w' \cup \{\{((e,\tau),\pi)\}\}$\;
+        \For{each $(i,\cdot) \in R, i \in I$}{
+            \If {$compatible_{TM}(e,i)$}{
+                //apply ir\;
+                $w' = w' \cup \{\{((e,i),\pi)\}\}$\;
+            }
+        }
+    }
+    \If {$e\in \IR$} {
+    	Let $i=e$\;
+        \For{each $(\hat e,\hat \pi) \in R, \hat e \in E$}{
+            \If {$compatible_{TM}(\hat e, i)$}{
+                //apply ir\;
+                $w' = w' \cup \{\{((\hat e,i),\hat \pi)\}\}$\;
+            }
+        }        
+    }
+    \Return{$w'$}\;
+  } %frontier
+ \caption{Реализация оператора $\frontier_R$}
+ \label{cpatm_ir_frontier}
+\end{algorithm}
+
+Докажем, что алгоритм~\ref{cpatm_ir_frontier} удовлетворяет условию~\ref{cpa_frontier_transfer_eq}.
+Рассмотрим случай $e \in R$. Доказательство для другого случая будет полностью таким же.
+Нам нужно показать, что
+$\forall \widehat{R} \subseteq R \cup \{e\} \land e \in \widehat{R}: \widehat{R} \subseteq frontier(R, e, \pi) \lor Reach^w(\{\widehat{R}\}) \subseteq R \cup \{e\}$. 
+Возьмем случайное множество $\widehat{R} \in R \cup \{e\} \land e \in \widehat{R}$. Возможны два варианта.
+
+\begin{itemize}
+\item $|\overline{R}| \neq 2$. Это означает $Reach^w(\{\overline{R}\}) = \emptyset \subseteq R$.
+\item $\overline{R} = \{(e, i)\} \land i \in IR$.
+\begin{itemize}
+\item $compatible_{TM}(e, i)$. $\forall i \in IR: \{(e, i)\} \in frontier(R, e, \pi)$ по определению оператора $frontier$.
+\item $compatible_{TM}(e, i) = false$. $Reach^w(\{\overline{R}\}) = \emptyset \subseteq R$.
+\end{itemize}
+\end{itemize}
+
+Требование выполнено.
+
+\section{Анализ с раздельным рассмотрением потоков без абстракции}
+
+В этом разделе покажем, что в представленную теорию укладывается классический алгоритм проверки моделей, описанный в~\cite{ThreadModular03}.
+
+Определим анализ с раздельным рассмотрением потоков с эффектами окружения, как
+$\mathbb{Q}=(D_{Q},$ $\Pi_{Q}, \tatarrow_{Q},$ $merge^E_{Q}, stop^E_{Q},$ $merge^I_{Q}, stop^I_{Q},$ $prec^E_{Q},prec^I_{Q},$ $compatible_{Q})$.
+
+Также как и в алгоритме~\cite{ThreadModular03} применение анализа возможно только к программам с ограниченным количеством точек создания потоков. Далее предполагаем, что программа имеет ограниченное количество потоков, которые отличаются точками в программе, обозначающих начало потока, например, для $thread\_create(pc_\nu)$ будет всегда создан поток с идентификатором $pc_\nu$.
+
+{\textbf 1.} 
+$D_Q=(C_Q, \mathcal{E}_Q,\mathcal{I}_Q, \epp_Q)$.\\
+
+\begin{itemize}
+\item $C_Q=C$ -- все конкретные состояния программы.\\
+
+\item $\mathcal{E}_Q=(E_Q, \top^E_Q, \bot^E_Q, \sqsubseteq^E_Q, \sqcup^E_Q)$ определен над $E_Q=\mathcal{R}$, где
+$\mathcal{R}$ множество всех проекций конкретных состояний на некоторый поток:
+$\mathcal{R} \subseteq T\times L\times C^{local} \times c_g \times c_s$.
+
+\item $\mathcal{I}_Q=(I_Q, \top^I_Q, \bot^I_Q, \sqsubseteq^I_Q, \sqcup_Q)$ определен над $I_Q=\mathcal{G}$ ($\tau=\bot^I_Q$), где
+$\mathcal{G}$ содержит эффекты окружения на глобальные части состояния
+$\mathcal{G} \subseteq T\times c_g \times c_s \times c_g \times c_s$.
+
+\item Для состояний $\forall e_1, \dots, e_j \in E_Q$, где $e_i=(t_i,pc_i,l_i,gl_i,s_i)$ определено как
+\begin{equation}
+\label{compatible_tm_na}
+\begin{aligned}
+& compatible^E(\{e_1, \dots, e_j\}) \Leftrightarrow \forall i\ne k:t_i\ne t_k \land gl_i=gl_k \land s_i=s_k=\hat s\\
+\end{aligned}
+\end{equation}
+
+Для совместных состояний $e_1,\dots,e_j$ можно определить $\hat{gl}=gl_i=gl_k$ и $\hat s=s_i=s_k$.
+
+\begin{equation}
+\label{epp_tm_na}
+\begin{aligned}
+& \forall e_1, \dots, e_j \in E_Q, e_i=(t_i,pc_i,l_i,gl_i,s_i)\\
+& compatible^E(\{e_1,\dots,e_j\}) \implies \\
+& \epp(e_1,\dots,e_j) = 
+\left\lbrace\left(
+\begin{array}{c}
+\{t_1 \to pc_1,\dots,t_j \to pc_j\},\\
+\{t_1\to l_1, \dots, t_j\to l_j\},\\
+\hat{gl}, \hat s
+\end{array}
+\right)\right\rbrace
+\\
+\end{aligned}
+\end{equation}
+
+\item $\sqsubseteq_Q, \sqcup_Q$ определены как равенство соответствующих элементов, то есть\\
+$e_1 \sqsubseteq^E_Q e_2$ iff $e_1 = e_2$, \\
+а $e_2 \sqcup_Q e_2 = \top^E$.
+
+\end{itemize}
+
+{\textbf 2.} $\Pi_Q$ содержит один элемент, так как анализ не использует абстракцию.
+
+{\textbf 3.}
+Отношение переходов $\tatarrow_Q$ содержит переход $e \tat{i,g}_Q (e', \pi)$ если
+\begin{itemize}
+\item $i=\tau$ и есть переход на проекциях. Пусть
+$e=(t, pc, l, gl, s)$ и есть
+\begin{itemize}
+\item $(\{t\to pc\}, \{t\to l\}, gl, s) \tc{g,t} (\{t\to pc'\}, \{t\to l'\}, gl', s'))$, где $g \ne thread\_create$, тогда \\
+\begin{enumerate}
+\item $e' = (t,pc',gl',s')$ (следующее состояние), 
+\item и $e'=(t,gl,s,gl',s')$ (эффект окружения).
+\end{enumerate}
+\item или в случае $g=thread\_create(pc_\nu)$, $\nu=pc_\nu$, \\
+$(\{t\to pc\}, \{t\to l\}, gl, s) \tc{thread\_create(pc_\nu), t} (\{t\to pc', \nu \to pc_\nu\}, \{t\to l,\nu \to l\}, gl, s))$, тогда \\
+\begin{enumerate}
+\item $e' = (t,pc',gl,s)$ (следующее состояние),
+\item и $e' = (\nu,pc_\nu,gl,s)\}$ (новый поток).
+\end{enumerate}
+\end{itemize}
+\item $i=(t, gl',s',gl'',s'')$, $e=(t, pc, l, gl, s)$. Если $compatible(e,i)$, тогда можно применить к данному состоянию эффект окружения $e'=(t, pc, l, gl'', s'')$.
+\end{itemize}
+
+{\textbf 4.}
+$merge^E_Q(e_1,e_2) = e_2$.
+
+{\textbf 5.}
+$merge^I_Q(i_1,i_2) = i_2$.
+
+{\textbf 6.}
+$stop^E_Q(e,R)=\exists e' \in R: e \sqsubseteq e'$.
+
+{\textbf 7.}
+$stop^I_Q(i,I)=\exists i' \in I: i \sqsubseteq i'$.
+
+{\textbf 8.}
+$prec^E_Q(e,\pi)=(e,\pi)$ (точность и состояние никогда не изменяются).
+
+{\textbf 9.}
+$prec^I_Q(i,\pi)=(i,\pi)$ (точность и эффект окружения никогда не изменяются).
+
+{\textbf 10.} 
+$compatible_Q: \mathcal{R}\times\mathcal{G} \to \mathbb{B}$ определяется, как равенство глобальных частей состояний, $compatible_Q(e,i)$ для $e=(t,pc,gl,s)$ и $i=(t',gl',s',gl'',s'')$ есть $t=t' \land gl=gl' \land s=s'$.   
+
+\section{Композиция различных видов анализа}
+\label{sect_composite_analysis}
+
+Композиция различных видов анализа может быть представлена, как отдельный анализ $\mathscr{C}=(D_{\mathscr{C}},$ $\Pi_{\mathscr{C}}, \tatarrow_{\mathscr{C}},$ $merge^E_{\mathscr{C}}, stop^E_{\mathscr{C}},$ $merge^I_{\mathscr{C}}, stop^I_{\mathscr{C}},$ $prec^E_{\mathscr{C}},prec^I_{\mathscr{C}},$ $compatible_{\mathscr{C}}$), который содержит множество $\Delta_i=(D_{\Delta_i},$ $\Pi_{\Delta_i}, \tatarrow_{\Delta_i},$ $merge^E_{\Delta_i}, stop^E_{\Delta_i},$ $merge^I_{\Delta_i}, stop^I_{\Delta_i},$ $prec^E_{\Delta_i},prec^I_{\Delta_i},$ $compatible_{\Delta_i}$), где каждый $\Delta_i$ реализует отдельный вид анализа.
+
+{\textbf 1.} $D_{\mathscr{C}} = D_{\Delta_1} \times \dots \times D_{\Delta_n}$
+
+$compatible_{\mathscr{C}}(e_1,\dots, e_m) = 
+compatible_1(e_1^1,\dots, e_m^1) \land \dots \land compatible_n(e_1^n,\dots, e_m^n)$
+
+\begin{equation}
+\label{composite_epp_def}
+\begin{aligned}
+\epp_{\mathscr{C}}
+\begin{pmatrix}
+\begin{pmatrix}
+e_1' \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m' \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} = 
+\epp_{\Delta_1}
+\begin{pmatrix}
+\begin{pmatrix}
+\widehat{e^1_1} \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+\widehat{e^1_m} \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} \cap \\
+\cap \dots \cap 
+\epp_{\Delta_n}
+\begin{pmatrix}
+\begin{pmatrix}
+\widehat{e^n_1} \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+\widehat{e^n_m} \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}  
+\end{aligned}
+\end{equation}
+
+{\textbf 2.} $\Pi_{\mathscr{C}} = \Pi_{\Delta_1} \times \dots \times \Pi_{\Delta_n}$
+
+{\textbf 3.}
+Внутренние элементы $\Delta$ работают с графом потока управления, с двумя дополнительными операциями:~\footnote{Заметим, что в реализации\cpachecker\ уже присутствуют две дуги в ГПУ для каждого вызова функции: function summary и function entry. Поэтому, вызов функции $thread\_create$ не требует изменений в ГПУ с точки зрения реализации.}
+\begin{itemize}
+\item $tc_{parent}$ представляет действие $thread\_create$ в родительском потоке, а
+\item $tc_{child}$ представляет действие $thread\_create$ в дочернем потоке.
+\end{itemize}
+
+Для отношения переходов в композиции
+\begin{equation}
+\label{composite_transfer_eq}
+\begin{aligned}
+e \tat{i,g}_{\mathscr{C}} (e',\pi') \mbox{ with } g=(l,op,l' )\mbox{, where } e = (e_1, \dots e_n), e' = (e_1', \dots e_n')
+\end{aligned}
+\end{equation} 
+
+\begin{itemize}
+\item если $op=thread\_create(l_\nu)$, то рассматриваются два перехода в родительском и в дочернем потоке
+\begin{enumerate}
+\item $e_j \tat{i,(l,tc_{parent}(l_\nu),l')}_{\Delta_j} (e_j',\pi')$,
+\item $e_j \tat{i,(l,tc_{child}(l_\nu),l')}_{\Delta_j} (e_j',\pi')$.
+\end{enumerate}
+\item иначе, $e_j \tat{i,g}_{\Delta_j} (e_j',\pi')$.
+\end{itemize}
+
+%For composition if we have a transfer 
+%$e \tat{\tau,g} (e',\pi')$. then 
+%we should always have a transfer to an inference object $i' \ne \bot^I$:
+%$e \tat{\tau,g} (i',\pi')$.
+
+Так как композитный анализ разбивает операцию $thread\_create$ на две дуги, требование~\ref{transfer_tm_ir_stronger} трансформируется в
+
+\begin{equation}
+\label{transfer_tm_ir_stronger_for_inner}
+\begin{aligned}
+& \forall c, c' \in C, g \in G, t \in T, c \tc{g,t} c' \\
+& \exists t_1, \dots, t_m \in T: \forall p \neq q: t_p \neq t_q \\
+& \exists k : 1 \le k \le m \land t_k = t \\
+& c \in \epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} \implies \\
+& \cdot g \neq thread\_create\\
+& \exists e_1', \dots, e_m' \in E:\\
+& c' \in \epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1' \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m' \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} \\
+& \mbox{ where } e_1', \dots, e_m' \mbox{ такие, что } \\
+&\exists i_1, \dots, i_{k-1}, i_{k+1}, \dots, i_m: \\
+&
+\begin{cases}
+\forall q \neq k: e_q \tat{i_q} \widehat{e_q} \land i_q \in \{i \mid e_k \tat{\tau} i\} \\
+e_k \tat{\tau} e_k' 
+\end{cases} \\
+& \cdot g = thread\_create:\\
+& \exists e_1', \dots, e_{m+1}' \in E:\\
+& c' \in \epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1' \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_{m+1}' \\
+t_{m+1} 
+\end{pmatrix}
+\end{pmatrix} \\
+& \mbox{ where } e_1' \dots e_{m+1}' \mbox{ такие, что } \\
+&\exists i_1, \dots, i_{k-1}, i_{k+1}, \dots, i_m: \\
+&
+\begin{cases}
+\forall q \neq k: e_q \tat{i_q} e_q' \land i_q \in \{i \mid e_k \tat{\tau} i\} \\
+e_k \tat{\tau, tc_{parent}} e_k' \\
+e_k \tat{\tau, tc_{child}} e_{m+1}
+\end{cases}\\
+& \cdot g = thread\_join(var,num):\\
+& \exists r: t_r \notin dom(c) \land c_t(var, num) = t_r \\
+& \exists e_1', \dots,e_{r-1}', e_{r+1}', e_m' \in E:\\
+& c' \in \epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1' \\
+t_1 
+\end{pmatrix}&,
+\dots& ,
+\begin{pmatrix}
+e_{r-1}' \\
+t_{r-1} 
+\end{pmatrix},
+\begin{pmatrix}
+e_{r+1}' \\
+t_{r+1} 
+\end{pmatrix} ,
+\dots& ,
+\begin{pmatrix}
+e_m' \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} \\
+& \mbox{ where } e_1',\dots,e_{r-1}', e_{r+1}', \dots e_m' \mbox{ такие, что } \\
+&\exists i_1, \dots, i_{k-1}, i_{k+1}, \dots, i_m: \\
+&
+\begin{cases}
+\forall q \neq k \land q \neq r: e_q \tat{i_q} e_q' \land i_q \in \{i \mid e_k \tat{\tau} i\} \\
+e_k \tat{\tau, tc_{parent}} e_k' \\
+e_k \tat{\tau, tc_{child}} e_{m+1}
+\end{cases}
+\end{aligned}
+\end{equation}
+
+Теперь нужно показать, что требование~\ref{transfer_tm_ir_stronger} выполнено для $\mathscr{C}$, если требование~\ref{transfer_tm_ir_stronger_for_inner} выполнено для всех его внутренних элементов. 
+Рассмотрим случайное конкретное состояние
+$$c \in  \epp_{\mathscr{C}}
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}$$
+где $e_1=(e^1_1, \dots, e^n_1), \dots, e_m=(e^1_m, \dots, e^n_m)$.
+
+По определению~\ref{composite_epp_def}, это означает что
+$$\forall j: 1\le j \le n: c \in  \epp_{\Delta_j}
+\begin{pmatrix}
+\begin{pmatrix}
+e^j_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e^j_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}$$
+
+Возьмем случайный переход
+$ g \in G, t \in T, c \tc{g,t} c'$ и покажем, что 
+$\exists e_1', \dots, e_m': e_j \tatarrow e_j'$ и
+$c' \in  \epp_{\mathscr{C}}
+\begin{pmatrix}
+\begin{pmatrix}
+e_1' \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m' \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}$
+
+%enumerate
+{\textbf 1.} Сначала рассмотрим случай $g \neq thread\_create$
+
+Используя требование~\ref{transfer_tm_ir_stronger_for_inner} для внутренних элементов, получаем, что 
+\begin{equation}
+\label{transfer_condition_for_inner}
+\begin{aligned}
+& \exists k : 1 \le k \le m \land t_k = t \\
+& \forall j: 1\le j \le n: \\
+& \exists t_1, \dots, t_n \in T, \forall p \neq q: t_p \neq t_q : \\
+& c \in \epp_{\Delta_j}
+\begin{pmatrix}
+\begin{pmatrix}
+e^j_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e^j_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} \implies \\
+& \exists \widehat{e^j_1}, \dots, \widehat{e^j_m} \in E_j:
+c' \in \epp_{\Delta_j}
+\begin{pmatrix}
+\begin{pmatrix}
+\widehat{e^j_1} \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+\widehat{e^j_m} \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} \\
+& \mbox{ where } \widehat{e^j_1} \dots \widehat{e^j_m} \mbox{ такие, что } \\
+&\exists i^j_1, \dots, i^j_{k-1}, i^j_{k+1}, \dots, i^j_m: \\
+&
+\begin{cases}
+\forall q \neq k: e^j_q \tat{i^j_q}_{\Delta_j} \widehat{e^j_q} \land i^j_q \in \{i \mid e^j_k \tat{\tau}_{\Delta_j} i\} \\
+e^j_k \tat{\tau}_{\Delta_j} \widehat{e^j_k} 
+\end{cases} 
+\end{aligned}
+\end{equation}
+
+Заметим, что $k$ является одним и тем же, для всех внутренних элементов и $t_i \neq t_j$, поэтому можно объединить все внутренние состояния следующим способом:
+
+\begin{align}
+& \forall q: 1 \le q \le m: e_q' = (\widehat{e^1_q}, \dots, \widehat{e^n_q}) \nonumber \\
+& \begin{cases}
+& i_q = (i^1_q, \dots, i^n_q), \mbox{ if } q \neq k \\
+& i_k = (\tau, \dots, \tau)
+\end{cases} \nonumber
+\end{align}
+
+Используя определение~\ref{composite_transfer_eq} отношения перехода в композитном анализе, получаем:
+
+\begin{equation}
+\label{composite_transfer_eq_2}
+\begin{aligned}
+& e_1 \tat{i_1}_{\mathscr{C}} e_1', i_1 \in \{i' \mid e_k \tat{\tau}_{\mathscr{C}} i'\} \\
+& \dots \\
+& e_k \tat{\tau}_{\mathscr{C}} e_k', e_k \tat{\tau}_{\mathscr{C}} i'\\
+& e_{k+1} \tat{i_{k+1}}_{\mathscr{C}} e_{k+1}', i_{k+1} \in \{i' \mid e_k \tat{\tau}_{\mathscr{C}} i'\} \\
+& \dots \\
+& e_m \tat{i_m}_{\mathscr{C}} e_m', i_m \in \{i' \mid e_k \tat{\tau}_{\mathscr{C}} i'\} 
+\end{aligned}
+\end{equation}
+
+Теперь используем условие на внутренние элементы~\ref{transfer_condition_for_inner}
+
+\begin{align}
+& \forall j, c' \in  \epp_{\Delta_j}
+\begin{pmatrix}
+\begin{pmatrix}
+\widehat{e^j_1} \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+\widehat{e^j_m} \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}
+\implies (def.~\ref{composite_epp_def}) \implies
+c' \in  \epp_{\mathscr{C}}
+\begin{pmatrix}
+\begin{pmatrix}
+e_1' \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m' \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} \nonumber \\
+& \mbox{ where } e_1' \dots e_m' \mbox{ такие, что (условие~\ref{composite_transfer_eq_2})} \nonumber \\
+&\exists i_1, \dots, i_m, k: 1 \le k \le m, t_k = t :\nonumber \\
+& \begin{cases}
+\forall q \neq k: e_q \tat{i_q}_{\mathscr{C}} e_q' \land i_q \in \{i \mid e_k \tat{\tau}_{\mathscr{C}} i\} \\
+e_k \tat{\tau}_{\mathscr{C}} e_k' 
+\end{cases} \nonumber 
+\end{align}
+
+Это как раз то, что нам нужно доказать. 
+
+{\textbf 2.} Рассмотрим случай $g = thread\_create$.
+Используем требования~\ref{transfer_tm_ir_stronger_for_inner} для внутренних элементов и получаем, 
+\begin{equation}
+\label{transfer_condition_for_inner_thread_create}
+\begin{aligned}
+& \exists k : 1 \le k \le m \land t_k = t \\
+& \forall j: 1\le j \le n: \\
+& \exists t_1, \dots, t_n \in T, \forall p \neq q: t_p \neq t_q : \\
+& c \in \epp_{\Delta_j}
+\begin{pmatrix}
+\begin{pmatrix}
+e^j_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e^j_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} \implies \\
+& \exists \widehat{e^j_1}, \dots, \widehat{e^j_{m+1}} \in E_j:
+c' \in \epp_{\Delta_j}
+\begin{pmatrix}
+\begin{pmatrix}
+\widehat{e^j_1} \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+\widehat{e^j_{m+1}} \\
+t_{m+1} 
+\end{pmatrix}
+\end{pmatrix} \\
+& \mbox{ где } \widehat{e^j_1} \dots \widehat{e^j_{m+1}} \mbox{ такие, что } \\
+&\exists i^j_1, \dots, i^j_m: \\
+&
+\begin{cases}
+\forall q \neq k: e^j_q \tat{i^j_q}_{\Delta_j} \widehat{e^j_q} \land i^j_q \in \{i \mid e^j_k \tat{\tau}_{\Delta_j} i\} \\
+e^j_k \tat{\tau, tc_{parent}}_{\Delta_j} \widehat{e^j_k} \\
+e^j_k \tat{\tau, tc_{child}}_{\Delta_j} \widehat{e^j_{m+1}}
+\end{cases} 
+\end{aligned}
+\end{equation}
+
+Заметим, что $k$ является одинаковым для всех внутренних элементов и поэтому можно объединить все внутренние состояния следующим способом:
+
+\begin{align}
+& \forall q: 1 \le q \le m + 1: e_q' = (\widehat{e^1_q}, \dots, \widehat{e^n_q}) \nonumber \\
+& \begin{cases}
+& i_q = (i^1_q, \dots, i^n_q), \mbox{ if } q \neq k \\
+& i_k = (\tau, \dots, \tau)
+\end{cases} \nonumber
+\end{align}
+
+Используя определение~\ref{composite_transfer_eq} отношения переходов композитного анализа, получаем:
+
+\begin{equation}
+\label{composite_transfer_eq_3}
+\begin{aligned}
+& e_1 \tat{i_1}_{\mathscr{C}} e_1', i_1 \in \{i' \mid e_k \tat{\tau}_{\mathscr{C}} i'\} \\
+& \dots \\
+& e_k \tat{\tau}_{\mathscr{C}} e_k', e_k \tat{\tau}_{\mathscr{C}} i'\\
+& e_k \tat{\tau}_{\mathscr{C}} e_{m+1}'\\
+& e_{k+1} \tat{i_{k+1}}_{\mathscr{C}} e_{k+1}', i_{k+1} \in \{i' \mid e_k \tat{\tau}_{\mathscr{C}} i'\} \\
+& \dots \\
+& e_m \tat{i_m}_{\mathscr{C}} e_m', i_m \in \{i' \mid e_k \tat{\tau}_{\mathscr{C}} i'\}
+\end{aligned}
+\end{equation}
+
+Теперь используем требование~\ref{transfer_condition_for_inner_thread_create}
+
+\begin{align}
+& \forall j, c' \in  \epp_{\Delta_j}
+\begin{pmatrix}
+\begin{pmatrix}
+\widehat{e^j_1} \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+\widehat{e^j_m} \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}
+\implies (def.~\ref{composite_epp_def}) \implies
+c' \in  \epp_{\mathscr{C}}
+\begin{pmatrix}
+\begin{pmatrix}
+e_1' \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_{m+1}' \\
+t_{m+1} 
+\end{pmatrix}
+\end{pmatrix} \nonumber \\
+& \mbox{ где } e_1' \dots e_{m+1}' \mbox{ такие, что (условие~\ref{composite_transfer_eq_3})} \nonumber \\
+&\exists i_1, \dots, i_m, k: 1 \le k \le m, t_k = t :\nonumber \\
+& \begin{cases}
+\forall q \neq k: e_q \tat{i_q}_{\mathscr{C}} e_q' \land i_q \in \{i \mid e_k \tat{\tau}_{\mathscr{C}} i\} \\
+e_k \tat{\tau}_{\mathscr{C}} e_k' \\
+e_k \tat{\tau}_{\mathscr{C}} e_{m+1}
+\end{cases} \nonumber 
+\end{align}
+
+\qedsymbol
+
+% TODO: Is it a requirement or follows from the other requirements?
+
+{\textbf 4.}
+$merge^E_{\mathscr{C}}(e_1,e_2) = (merge^E_{\Delta_1}(e_1^1, e_2^1), \dots, merge^E_{\Delta_n}(e_1^n, e_2^n)$.
+
+Abstraction lattice!
+
+{\textbf 5.}
+$merge^I_{\mathscr{C}}(i_1,i_2) = (merge^I_{\Delta_1}(i_1^1, i_2^1), \dots, merge^I_{\Delta_n}(i_1^n, i_2^n)$.
+
+{\textbf 6.}
+$stop^E_{\mathscr{C}}(e,R)=\exists \widehat{e} \in R \mbox{ } \forall i \mbox{ } stop^E_{\Delta_i}(e_i, \widehat{e_i})$.
+
+{\textbf 7.}
+$stop^I_{\mathscr{C}}(i,R)=\exists \widehat{i} \in R \mbox{ } \forall i \mbox{ } stop^I_{\Delta_i}(i_i, \widehat{i_i})$.
+
+{\textbf 8.}
+$prec^E_{\mathscr{C}}(e,\pi)=(prec^E_{\Delta_1}(e_1, \pi_1), \dots, prec^E_{\Delta_n}(e_n, \pi_n)$. Условие~\ref{prec_tm_e_equation} выполнено для композитного анализа, если оно выполнено для каждого из внутренних видов анализа $\Delta_j$, так как по определению $e \sqsubseteq e' \iff \forall j: e_j \sqsubseteq e_j'$.
+
+{\textbf 9.}
+$prec^I_{\mathscr{C}}(i,\pi)=(prec^I_{\Delta_1}(i_1, \pi_1), \dots, prec^I_{\Delta_n}(i_n, \pi_n)$. Условие~\ref{prec_tm_i_equation} выполнено для композитного анализа, если оно выполнено для каждого из внутренних видов анализа $\Delta_j$, так как по определению $i \sqsubseteq i' \iff \forall j: i_j \sqsubseteq i_j'$.
+
+{\textbf 10.} 
+$compatible_{\mathscr{C}}(e, i) = compatible_{\Delta_1}(e_1, i_1) \land \dots \land compatible_{\Delta_n}(e_n, i_n)$
+
+\section{Thread Analysis}
+\label{sect_thread_analysis}
+We define Thread Analysis 
+$\mathbb{T}=(D_{T},$ $\Pi_{T}, \tatarrow_{T},$ $merge^E_{T}, stop^E_{T},$ $merge^I_{T}, stop^I_{T},$ $prec^E_{T},prec^I_{T},$ $compatible_{T})$ which tracks thread identifiers.
+
+The Thread Analysis inherits the limitations of~\cite{ThreadModular03} and restricted to the programs with bounded thread creation. We suppose that the program has finite number of threads identified by the locations where they are created, i.e $T\subseteq L$ and for $thread\_create(pc_\nu)$ we always create a thread with identifier $pc_\nu$. Note, that the other analyses are not bounded.
+
+{\textbf 1.} The domain $D_T$ is based on the flat lattice for the set of threads $T$: 
+$D_T = (C, \mathcal{E}, \mathcal{I}, \epp)$, with $\mathcal{E}=(E_T, \top^E, \bot^E, \sqsubseteq^E, \sqcup^E)$, $E_T=T \cup \{\bot^E,\top^E\}$, $\bot^E \sqsubseteq t \sqsubseteq^E \top^E$ and $t \neq t'$ $\Rightarrow$ $t \not\sqsubseteq^E t'$ for all elements $t, t'\in T$ 
+(this implies $\bot^E \sqcup^E t = t$, $\top^E \sqcup t = \top^E$, $t \sqcup^E t' = \top^E$ for all elements $t,t'\in T$, $t\neq t'$), 
+and 
+\begin{itemize}
+\item $\forall t_1, \dots, t_j \in T:$
+\begin{equation}
+\begin{aligned}
+& compatible^E(\{t_1,\dots, t_j\}) = \forall k\ne m: t_k\ne t_m\\
+\end{aligned}
+\end{equation}
+
+\item $\forall t_1, \dots, t_j \in T:$
+\begin{equation}
+\begin{aligned}
+& \epp(t_1,\dots,t_j) = 
+\begin{cases}
+& \left\lbrace (c_{pc},c_l,c_g,c_s) \in C 
+\left| 
+\begin{array}{c}
+dom(c_{pc}) = \{t_1, \dots, t_j\}\\
+dom(c_l) = \{t_1, \dots, t_j\}\\
+\end{array}
+\right.
+\right\rbrace, \\
+& \mbox{if } compatible^E(\{t_1,\dots, t_j\})\\
+& \emptyset \mbox{ else}
+\end{cases}
+\end{aligned}
+\end{equation}
+
+\item $\mathcal{I}=\mathcal{E}$. 
+\end{itemize}
+
+{\textbf 2.} There is only one precision, which is the set of all threads: $\Pi_T = T$.
+
+{\textbf 3.} The transfer relation $\tatarrow_T$ has the transfer $t \tat{\tau, g}_T (t', \pi)$ if $t=t'$ and $g=(\cdot,op,\cdot)$ and 
+\begin{itemize}
+\item $op \neq tc_{parent}$ and $op\neq tc_{child}$ (the syntactical successor in the CFA without considering the semantics of the operation $op$). 
+\item $op=tc_{parent}(l_\nu)$ then $t \tat{\tau, g}_T (t, \pi)$,
+\item $op=tc_{child}(l_\nu)$ then $t \tat{\tau, g}_T (l_\nu, \pi)$.
+\end{itemize}
+
+We have the transfer $\top \tat{\tau, g}_T (\top, \pi)$ for all $g\in G$.
+
+$\forall t,i \in E_T: compatible^E(t,i) \implies t \tat{i, g}_T (t, \pi)$, because 
+\begin{itemize}
+\item inference object guards the transfer by checking inequality of thread identifiers in compatible,
+\item states are {\em invariant to environment}, i.e. no thread can change an identifier of the other thread.
+\end{itemize}
+
+{\textbf 4.} The merge operator does not combine elements when control flow meets: $merge^E_T(e, e', \pi) = e'$.
+
+{\textbf 5.} The merge operator does not combine inference objects when control flow meets: $merge^I_T(i, i', \pi) = i'$.
+
+{\textbf 6.} The termination check considers abstract states individually: $stop^E_T(e, R, \pi) = (e \in R)$.
+
+{\textbf 7.} The termination check is always true: $stop^I_T(i, R, \pi) = true$. Inference objects do not change the states.
+
+{\textbf 8.} The precision is never adjusted: $prec^E_T(e, \pi, R) = (e, \pi)$.
+
+{\textbf 9.} The precision is never adjusted: $prec^I_T(i, \pi, R) = (i, \pi)$.
+
+{\textbf 10.} $compatible_T(e,i) \equiv compatible^E(e,i)$
+
+%----------------------------------------------------
+%----------------------------------------------------
+%----------------------------------------------------
+\section{Анализ точек программы}
+\label{sect_location_analysis}
+
+Определим анализ точек программы (Location Analysis)
+$\mathbb{L}=(D_{L},$ $\Pi_{L}, \tatarrow_{L}, merge^E_{L}, stop^E_{L}, merge^I_{L}, stop^I_{L}, prec^E_{L},prec^I_{L})$, который отвечает за синтаксическую достижимость точек программы.
+Классический вариант этого анализа описан в ~\cite{Beyer08}.
+Расширим его компоненты для возможности его применения в анализе с раздельным рассмотрением потоков.
+ 
+{\textbf 1.} Абстрактный домент $D_L$ основан на плоской решетке дя множества точек программы $L$: 
+$D_L = (C, \mathcal{E}, \mathcal{I}, compatible^E, \epp)$, с $\mathcal{E}=(E_L, \top^E, \bot^E, \sqsubseteq^E, \sqcup^E)$, $E_L= L \cup \{\bot^E,\top^E\}$, $\bot^E \sqsubseteq l \sqsubseteq^E \top^E$ and $l \neq l'$ $\Rightarrow$ $l \not\sqsubseteq^E l'$ для всех элементов $l, l' \in L$ 
+(отсюда следует $\bot^E \sqcup^E l = l$, $\top^E \sqcup l=\top^E$, $ l\sqcup^E l' = \top^E$ для всех элементов $l,l'\in L$, $l\neq l'$), 
+и
+$\forall l_1, \dots, l_j \in L:$
+\begin{equation}
+\label{location_epp_def}
+\begin{aligned}
+\epp_{\mathbb{L}}
+\begin{pmatrix}
+\begin{pmatrix}
+l_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+l_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} = 
+\left\lbrace (c_{pc},c_l,c_g,c_s) \in C 
+\left| 
+\begin{array}{c}
+t_1, \dots, t_m \in T\\
+c_{pc} = 
+\left\lbrace
+\begin{array}{c}
+t_1 \to l_1,\\
+\dots\\
+t_m \to l_m\\
+\end{array}
+\right\rbrace, \\
+dom(c_l) = \{t_1, \dots, t_m\}\\
+\end{array}
+\right.
+\right\rbrace\\
+\end{aligned}
+\end{equation}
+
+$\mathcal{I}=(I_L, \top^I, \bot^I, \sqsubseteq^I, \sqcup^I)$ содержит один элемент ($I_L=\{\varepsilon\}$), так как состояния этого анализа {\em инвариантны к окружению}, то есть ни один поток не может изменить точку в программе, на которой находится другой поток.
+
+{\textbf 2.} Множество точности содержит только один элемент $\Pi_L = \{\pi_0\}$, так как не подразумевается применение абстракции.
+
+{\textbf 3.} Отношение переходов $\tatarrow_L$ содержит переход $l \tat{\tau, g}_L (l', \pi)$, где $g=(l_1,op,l_2)$, если $l_1 = l$ и
+\begin{itemize}
+\item $op \neq tc_{child}$ и $l' = l_2$ (следующее состояние в ГПУ без учета семантики операции $op$). 
+\item $op=tc_{child}(l_\nu)$ и $l_2 = l_\nu$. 
+\end{itemize}
+
+Есть переход $\top \tat{\tau, g}_L (\top, \pi)$ для всех $g\in G$.
+
+$\forall l \in E_L: l \tat{\varepsilon, g}_T (l, \pi)$, так как 
+\begin{itemize}
+\item эффект окружения $\varepsilon$ не ограничивает переход,
+\item состояния {\em инвариантны к окружению}, то есть ни один поток не может изменить точку в программе, на которой находится другой поток.
+\end{itemize}
+
+Проверим условие~\ref{transfer_tm_ir_stronger_for_inner}.
+Возьмем случайное состояние $c \in \epp
+\begin{pmatrix}
+\begin{pmatrix}
+l_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+l_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}$
+
+По определению~\ref{location_epp_def} это означает 
+$$ c_{pc} = 
+\left\lbrace
+\begin{array}{c}
+t_1 \to l_1,\\
+\dots\\
+t_m \to l_m\\
+\end{array}
+\right\rbrace.$$.
+
+Рассмотрим случайный переход $c \tc{g,t} c'$. Если этот переход возможен на конкретных состояниях, это означает, что $\exists k : 1 \le k \le m \land t_k = t$. Зафиксируем это значение $k$ и будем рассматривать $\tau$-переходы из состояния $l_k$. Остальные состояния не изменятся, так как переход по пустому переходу окружения не меняют состояния.
+
+%TODO thread\_join
+Рассмотрим случай $g \neq thread\_create$. В этом случае $l_k' = l_2$ -- вершине ГПУ, в который направлена дуга $g$. Изменений других состояний нет. $$ c'_{pc} = 
+\left\lbrace
+\begin{array}{c}
+t_1 \to l_1,\\
+\dots,\\
+t_k \to l_k'
+\dots,\\
+t_m \to l_m\\
+\end{array}
+\right\rbrace.$$ Это означает, что $$с' \in \begin{pmatrix}
+\begin{pmatrix}
+l_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+l_k' \\
+t_k 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+l_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}$$.
+
+Рассмотрим случай $g = thread\_create(l_\nu)$. В этом случае также $l_k' = l_2$ -- вершине ГПУ, в который направлена дуга $g$, а $l_{m+1} = l_\nu$. Здесь $l_k \tat{tc_{parent}} l_k'$, $l_k \tat{tc_{child}} l_\nu$. При этом переходе $$ c'_{pc} = 
+\left\lbrace
+\begin{array}{c}
+t_1 \to l_1,\\
+\dots,\\
+t_k \to l_k'
+\dots,\\
+t_m \to l_m,\\
+t_{m+1} \to l_{m+1}\\
+\end{array}
+\right\rbrace.$$ Это означает, что $$с' \in \begin{pmatrix}
+\begin{pmatrix}
+l_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+l_k' \\
+t_k 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+l_m \\
+t_m 
+\end{pmatrix}& ,
+\begin{pmatrix}
+l_\nu \\
+t_{m+1} 
+\end{pmatrix}
+\end{pmatrix}$$.
+
+
+{\textbf 4.} Оператор слияния не объединяет элементы: $merge^E_L(e, e', \pi) = e$. Очевидно, он удовлетворяет условию~\ref{cpa_merge_tm_e_eq}, так как $e \sqsubseteq e$.
+
+{\textbf 5.} $merge^I_L(\varepsilon, \varepsilon, \pi) = \varepsilon$. Очевидно, он удовлетворяет условию~\ref{cpa_merge_tm_i_eq}, так как $\varepsilon \sqsubseteq \varepsilon$.
+
+{\textbf 6.} Оператор останова рассматривает состояния индивидуально: $stop^E_L(e, R, \pi) = (e \in R)$. Очевидно, он удовлетворяет условию~\ref{cpa_stop_tm_e_eq}, так как
+\begin{align}
+&\forall e \in E, R \subseteq E, \pi \in \Pi: \nonumber \\
+& (e \in R) \implies \forall \widehat{R} \subseteq E: \{e\} \cup \widehat{R} \subseteq R \cup \widehat{R} \implies \nonumber \\
+&implies (eq.\ref{cpa_conc_eq_0}) \forall \widehat{R} \subseteq E: \conctm{\{e\}\cup \widehat{R}} \subseteq \conc{R' \cup \widehat{R}}
+\end{align}
+
+{\textbf 7.} $stop^I_L(\varepsilon, R, \pi) = true$. 
+
+{\textbf 8.} Точность и состояния никогда не корректируются: $prec^E_L(e, \pi, R) = (e, \pi)$.
+Очевидно, он удовлетворяет условию~\ref{prec_tm_e_equation}, так как $e \sqsubseteq e$.
+
+{\textbf 9.} $prec^I_L(\varepsilon, \pi, R) = (\varepsilon, \pi)$.
+Очевидно, он удовлетворяет условию~\ref{prec_tm_i_equation}, так как $\varepsilon \sqsubseteq \varepsilon$.
+
+{\textbf 10.} $compatible(l,\varepsilon) = true$.
+
+%----------------------------------------------------
+%----------------------------------------------------
+%----------------------------------------------------
+
+\section{Анализ предикатов}
+\label{sect_predicate_analysis}
+Пусть $\mathscr{P}$ -- это множество предикатов над переменными программы в теории без кванторов $\mathscr{T}$.
+Формула $\varphi$ является логической комбинацией предикатов из $\mathscr{P}$.
+
+Пусть $v: X \to \mathbb{Z}$ является отображением из переменной в ее значение.
+Определим $v \models \varphi$, где $v$ называется моделью $\varphi$.
+
+Опредилим переименование переменных $\theta: X \to X'$, которое применимо к формулам $\theta(\varphi)$ и их моделям $\theta(v)$.
+Обозначим
+$$\theta_{X,i}= 
+\left\lbrace\begin{array}{ll}
+x \mapsto x\#i, & \mbox{ если } x \in X\\
+x \mapsto x, &\mbox{ иначе}.\\
+\end{array}
+\right.
+$$
+и
+$$\theta_{X,i}^{-1}= 
+\left\lbrace\begin{array}{ll}
+x\#i \mapsto x, & \mbox{ если } x \in X\\
+x \mapsto x, &\mbox{ иначе}.\\
+\end{array}
+\right.
+$$
+
+Определим $(\varphi)^\pi$ -- логическую предикатную абстракцию формулы $\varphi$.
+
+Определим $SP_{op}(\varphi)$ -- сильнейшее постусловие $\varphi$ и операции $op$.
+
+Требование: $c \tc{op} c' \land (c_l, c_g) = v \models \varphi \implies (c_l', c_g') = v' \models SP_{op}(\varphi)$
+
+Определим анализ предикатов (Predicate Analysis) $\mathbb{P}=(D_{P},$ $\Pi_{P}, \tatarrow_{P},$ $merge^E_{P}, stop^E_{P},$ $merge^I_{P}, stop^I_{P},$ $prec^E_{P},prec^I_{P},$ $compatible_{P})$, который отслеживает значение предикатов над переменными программы.
+
+Он состоит из следующий компонентов.
+
+{\textbf 1.} Абстрактный домен $D_{P}=(C, \mathcal{E}, \mathcal{I}, compatible^E, \epp)$:
+
+\begin{itemize}
+\item Полурешетка
+$\mathcal{E}=(E, \top^E, \bot^E, \sqsubseteq^E, \sqcup^E)$, которая состоит из множества
+$E = \mathcal{P}$, 
+$\top^E = true$ и $\bot^E = false$.
+
+Частичный порядок $\sqsubseteq^E \subseteq E \times E$ определяется как $e \sqsubseteq^E e' \Leftrightarrow e \implies e'$.
+Объединение элементов $\sqcup^E: E \times E \to E$ определяет ближайший верхний по решетке элемент в соответствии с частичным порядком.
+
+\item
+Определим совместные частичные состояния как те, которые имеют общую глобальную часть ($X^{global}$).
+Для этой цели мы переименуем локальные переменные каждого состояния, и поэтому у нас должно быть общее решение для глобальных переменных, если взять конъюнкцию всех состояний.
+
+\begin{equation}
+\begin{aligned}
+& \forall e_1, \dots, e_j \in E \\
+& compatible^E(\{e_1,\dots, e_j\}) = \\
+& \exists v: v \models \theta_{X^{local},1}(e_1) \land \dots \land \theta_{X^{local},n}(e_n)
+\end{aligned}
+\end{equation}
+
+Для совместных состояний $e_1, \dots, e_j \in E$ и для каждого решения 
+$v \models \theta_{X^{local},1}(e_1) \land \dots \land \theta_{X^{local},n}(e_n)$
+можно определить функцию $\hat v_g = v_{\mid X^{global}}$, представляющую общую глобальную часть состояния и функции $\hat v_1=\theta_{X^{local},1}^{-1}(v)_{\mid X^{local}}, \dots, \hat v_j=\theta_{X^{local},1}^{-1}(v)_{\mid X^{local}}$, представляющие локальные части.
+
+Функция объединения $\epp: 2^(E \times T) \to 2^C$ сопоставляет каждому множеству абстрактных состояний сумму их совместных частичных состояний (мы рассматриваем локальную часть идивидуальных состояний $\hat v_i$ и общую глобальную часть $\hat v_g$).
+
+\item Полурешетка
+$\mathcal{I}=(I, \top^I, \bot^I, \sqsubseteq^I, \sqcup^I)$, которая состоит из двух формул $I=\mathscr{P}\times \mathscr{P}$.
+
+Первая формула обозначает начальное состояние (используется для проверки совместности), а вторая формула представляет глобальные переменные, которые были изменены окружением.
+
+При этом $\top^I=(true,true)$, $\bot^I=(false,false)$, 
+$\sqsubseteq^I$ ($\sqcup^I$)  определяется применением  $\sqsubseteq^E$ ($\sqcup^E$) к первому и второму элементу пары.
+\end{itemize}
+
+{\textbf 2.} Множество точности $\Pi_P = 2^\mathscr{P}$ отвечает за точность абстрактного состояния и содержит в себе множество предикатов.
+
+{\textbf 3.} Отношение переходов $e \tat{i,g}_C (e',\pi)$.
+
+\begin{itemize}
+\item Для $i=\tau$ переход $e \tat{\tau, g}_{P} (e', \pi)$ и $e \tat{\tau, g}_{P} (i', \pi)$, где $g = (\cdot, op, \cdot)$, существует, если
+$$e'= 
+\left\lbrace\begin{array}{ll}
+(SP_{op}(e))^\pi, & \mbox{ если } op=assign(w, expr) \lor op=assume(expr)\\
+e, &\mbox{ иначе}.\\
+\end{array}
+\right.
+$$
+и 
+$$i'= 
+\left\lbrace
+\begin{array}{ll}
+(\theta_{X^{local},env}(e),\theta_{X^{local},env}(SP_{op}(e))),&\mbox{если } op=assign(w, expr),\\
+(\theta_{X^{local},env}(e),true),&\mbox{иначе}.\\
+\end{array}
+\right.
+$$
+
+
+\item Для $i=(\hat e,\hat \varphi)$ переход вычисляет абстракцию для формулы $\hat \varphi \land e$ для совместных состояний $e$ и $\hat e$.
+
+Определим совместность состояния и эффекта окружения $compatible(e, i)$, где  $i=(\hat e,\hat \varphi)$.
+
+\begin{equation}
+\label{cpa_predicate_compatible}
+\begin{aligned}
+& compatible_{TM}(e, i) = \exists v: v \models e \land \hat e
+\end{aligned}
+\end{equation}
+
+Переход $e \tat{i, g}_{C} (e', \pi')$, где $i=(\hat e,\hat \varphi)$, существует, если
+$compatible_{TM}(e,i)$ и $e'= (\hat \varphi \land e)^{\pi'}$.
+\end{itemize}
+
+\begin{proof}
+
+Покажем, что определение отношения переходов удовлетворяют условию~\ref{transfer_tm_ir_stronger}. 
+
+Рассмотрим случайное состояние $c \in \epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}$ и переход $c \tat{t, g} c'$.
+
+Не будем подробно рассматривать случаи $g = thread\_create$, $g = thread\_join$, так как эти переходы не меняют состояния анализа предикатов и не меняют состояние памяти ($c_l$ и $c_g$). Поэтому в этом случае $c, c' \in \epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}$.
+
+Рассмотрим теперь случай $g = assign$ или $g = assume$. Зафиксируем значение $k$ такое, что $t_k = t$. Будем рассматривать переход в потоке из состояния $e_k$.
+
+$e_k \tatarrow{\tau} e_k'$, $e_k \tat{\tau} i' = (\theta_{X^{local},env}(e),\theta_{X^{local},env}(SP_{op}(e_k))$. 
+$\forall j \neq k: e_j \tat{i'} e_j'$.
+Переход по эффекту окружения возможен, так как состояния являются совместными -- к ним был применим оператор $epp$.
+
+Проверим совместность состояний $e_k'$ и $e_j'$ ($j \neq k$), где $e_k' = (SP_{op}(e_k))^\pi$, $e_j' = (e_j \land \theta_{X^{local},env}(SP_{op}(e_k))^\pi$. 
+Заметим, что $\exists v': v' \models e_k'$, иначе перехода $c \tat{t, g} c'$ не было бы.
+Кроме того, известно, что $\exists v: v \models e_k \land e_j$, так как состояния были совместны.
+Если же не существует такого $\widehat{v}$, который $v' \models e_k' \land e_j'$, это означает, что не существует одинаковых значений глобальных переменных для всех потоков, то есть, перехода $c \tat{t, g} c'$ быть не может.
+
+%Consider an arbitrary $c = (c_{pc}, c_l, c_g, c_s) \in \conc{R}$ and an arbitrary $c'= (c_{pc}', c_l', c_g', c_s'): c \tcarrow c'$.
+
+%\begin{align}
+%& c \in \conc{R} \Leftrightarrow \exists e_1 \dots e_n \in R: compatible^E(\{e_1, \dots, e_n\}) \land c \in \epp (\{e_1, \dots, e_n\}) \nonumber 
+%\end{align}
+
+%\begin{enumerate}
+%\item If $c \tcarrow c'$ does not change $c_g$ and $c_l$, it means $c' \in \conc{R}$, as $\epp$ operator does not limit $c_{pc}$ and $c_s$.
+%
+%\item If $c \tcarrow c'$ changes only $c_l$.
+%So, $\exists i: (t_i \mapsto cl_i) \in c_l$ changed into $(t_i \mapsto cl_i') \in c_l'$.
+%We do not know the particular $i$, anyway we consider all $e \tat{\tau} e', e \in R$.
+%By the definition $e' = (SP_{op}(e))^\pi$.
+%The requirement for $SP_{op}(e)$: $cl_i \models e \implies cl_i' \models e' = SP_{op}(e)$.
+%That means $c' \in \epp (\{e_1, \dots, e_i', \dots, e_n\})$
+%
+%\item If $c \tcarrow c'$ changes $c_g$. So, $\exists g \in G, t \in T: c \tc{g, t} c'$.
+%The operation $g$ can be applied to one of $e_i$: $e_i \tat{\tau} e_i'$ and $e_i \tat{\tau} i'$. $compatible^E(\{e_1, \dots, e_n\}) \implies compatible_{TM}(e_i, i')$
+%That means we may apply $e_i' \tat{i'} e_i''$. The requirement $\forall i: c_g \models e_i \implies c_g' \models e_i'' = SP_{op}(e_i)$.
+%Then, $c' \in \epp (\{e_1'', \dots, e_n''\})$.
+%
+%\end{enumerate}
+\end{proof}
+
+{\textbf 4.} Оператор слияния состояний не объединяет элементы: $merge^E_{P}(e, e', \pi) = e'$. Требование~\ref{cpa_merge_tm_e_eq} очевидно выполнено, так как $e' \sqsubseteq e'$.
+
+{\textbf 5.} Оператор слияния состояний не объединяет элементы: $merge^I_{Sep}(i, i', \pi) = i'$. 
+Требование~\ref{cpa_merge_tm_i_eq} очевидно выполнено, так как $i' \sqsubseteq i'$.
+
+Options: 
+\begin{enumerate}
+\item merge second elements of inference objects (modifications) for equal (or covered) first elements (start states).
+$$merge^I_{Eq}(i, i', \pi)= 
+\left\lbrace\begin{array}{ll}
+(e, \varphi \lor \varphi'), & \mbox{ if } e = e' \\
+i', &\mbox{ otherwise}.\\
+\end{array}
+\right.$$
+\item merge first and second elements
+$$merge^I_{Join}(i, i', \pi)= 
+(e \lor e', \varphi \lor \varphi')$$
+\end{enumerate}
+
+{\textbf 6.} Оператор останова проверяет, покрыто ли состояние $e$ другим состоянием из множества достижимых состояний: $stop^E_{P}(e, R, \pi) = \exists e'\in R: (e \sqsubseteq e')$.
+
+\begin{proof}
+Проверим, что требование~\ref{cpa_stop_tm_e_eq} выполнено.
+\begin{align}
+&\forall e \in E, R, \widehat{R} \subseteq E, \pi \in \Pi: \nonumber \\
+& e \sqsubseteq e' \implies (eq.~\ref{cpa_conc_eq_2}) \implies \conctm{\widehat{R} \cup R \cup e} \subseteq \conctm{\widehat{R} \cup R \cup e'} \implies \nonumber \\
+& \implies (eq.~\ref{cpa_conc_eq_0}) \implies \conctm{\widehat{R} \cup e} \subseteq \conctm{\widehat{R} \cup R} \nonumber
+\end{align}
+\end{proof}
+
+{\textbf 7.} Оператор останова для эффектов окружения проверяет, может ли изменить состояние этот эффект и не покрыт ли он другим эффектом окружения, находящимся во множестве достижимых состояний:  $i=(\psi,\varphi)$
+$stop^I_{P}(i, R, \pi) = (\varphi=true) \lor \exists i'\in R: i' \sqsubseteq i$.
+
+\begin{proof}
+Требование~\ref{cpa_stop_tm_i_eq} может быть проверено по аналогии с п. 6. 
+\end{proof}
+
+{\textbf 8.} $prec^E_{P}(e, \pi, R) = (e, \pi)$. Условие~\ref{prec_tm_e_equation} выполнено, так как $e \sqsubseteq e$.
+
+{\textbf 9.} $prec^I_{P}(i, \pi, R) = (i, \pi)$. Условие~\ref{prec_tm_i_equation} выполнено, так как $e \sqsubseteq e$.
+
+{\textbf 10.} Проверка совместности была определена в~\ref{cpa_predicate_compatible}.
+
+\section{Simple Extended Thread Analysis}
+\label{sect_simple_extended_thread_analysis}
+
+Определим анализ потоков
+$\mathbb{M}=(D_{M},$ $\Pi_{M}, \tatarrow_{M},$ $merge^E_{M}, stop^E_{M},$ $merge^I_{M}, stop^I_{M},$ $prec^E_{M},prec^I_{M},$ $compatible_{M})$, который отслеживает идентификаторы потоков.
+
+\textbf{Основные предположения } этого анализа следующие
+\begin{enumerate}
+\item 
+\begin{equation}
+\label{main_assumption_1}
+\begin{aligned}
+& \forall c \tat{t, g} c': g = thread\_exit() \\
+& \forall t_c \in T: (t_c, t) \notin c_m
+\end{aligned}
+\end{equation}
+\item 
+\begin{equation}
+\label{main_assumption_2}
+\begin{aligned}
+& \forall c \tat{t, g} c': g = thread\_create(var, num, l_{\nu}) \\
+& \forall n: c_t(var, n) \notin T \\
+\end{aligned}
+\end{equation}
+\item 
+\begin{equation}
+\label{main_assumption_4}
+\begin{aligned}
+& \mbox{Для любой программы существует }{TCT}_g \subseteq X_t \to X_t: \\ % here we strongly use 2.
+& \forall c,c'\in C, t\in T: c \tat{t, g} c': g = thread\_create(var, num, l_{\nu})\\
+& \forall v \in X_t, n \in \mathbb{N}: c_t(v, n) = t \implies TCT_g(var) = (v)\\
+& \mbox{Для создания потока в родительском потоке }t\mbox{ в } var \\
+& \mbox{ та же переменная содержится в }TCT_g
+\end{aligned}
+\end{equation}
+\end{enumerate}
+
+%The Thread Analysis inherits the limitations of~\cite{ThreadModular03} and restricted to the programs with bounded thread creation. We suppose that the program has finite number of threads identified by the locations where they are created, i.e $T\subseteq L$ and for $thread\_create(pc_\nu)$ we always create a thread with identifier $pc_\nu$. Note, that the other analyses are not bounded.
+
+{\textbf 1.} Абстрактный домен $D_M$ основан на плоской решетке для переменных потока $X_t$: 
+$D_M = (C, \mathcal{E}, \mathcal{I}, \epp)$, with $\mathcal{E}=(E_M, \top^E, \bot^E, \sqsubseteq^E, \sqcup^E)$, $E_M = X_t \times Paths \times Paths \{Alive, Dead\} \cup \{\bot^E,\top^E\}) $,
+где $Paths$ -- это множество всех возможных последовательностей $\{label_n\}^{\infty}_1$ и $label_n \in X_t \times \{Child, Parent\}$
+
+$e = (l, pSet, tSet, status)$. $l \in X_t$, $tSet, pSet \in Paths$, $status \in \{Alive, Dead\}$.
+$\bot^E \sqsubseteq \{(v, \cdot)\} \sqsubseteq^E \top^E$ и $v \neq v'$ $\Rightarrow$ $v \not\sqsubseteq^E v'$ для всех элементов $v, v'\in X_t$ 
+(откуда следует $\bot^E \sqcup^E \{(v, \cdot)\} = \{(v, \cdot)\}$, $\top^E \sqcup \{(v, \cdot)\} = \top^E$, $\{(v, \cdot)\} \sqcup^E \{(v', \cdot)\} = \top^E$ для всех элементов $v,v'\in X_t$, $v\neq v'$)
+
+\begin{itemize}
+\item $\forall e_1, \dots, e_m \in E$ обозначим
+\begin{equation}
+\label{tct}
+\begin{aligned}
+& TCT(\{e_1, \dots, e_m\}) = \\
+& \left\lbrace (v_j, v_i) \left|
+\begin{array}{c}
+\exists a > 0, 1 \le x \le m, 1 \le b \le m - a: \\
+(v_i, Child) = label_a \in tSet_x \land \\
+(v_j, \cdot) = label_{a+b} \in tSet_x \land \\
+\forall 1 \le c < b: status_{a+c} \neq Child
+\end{array}
+\right.
+\right\rbrace
+\end{aligned}
+\end{equation}
+
+\item $\forall e_1, \dots, e_m \in E:$
+\begin{equation}
+\label{compatible_E_thread_M}
+\begin{aligned}
+& compatible_{E}(\{e_1, \dots, e_m\}) = \\
+& \forall (v_i, v_j) \in TCT(\{e_1, \dots, e_m\}): \\
+& (v_i, v_k) \in TCT(\{e_1, \dots, e_m\}) \implies v_k = v_j \land \\
+& \forall i \neq j: compatible_{TM}(e_i, e_j) \land \\
+& \forall 1 \le i \le m: status_i = Dead \implies pSet_i = tSet_i \land \\
+& \forall 1 \le i \le m: (l_i, Child) \in pSet_i \land \\
+& \forall 1 \le i \le m, 0 \le x \le \infty, y > x: \\
+& (l_i, Child) = label_x \in tSet_i \implies \\
+& \forall label_y = (v_y, status_y) \in tSet_i \land status_y = Parent
+\end{aligned}
+\end{equation}
+
+Определение означает, что дерево создания потоков (ДСП) является одинаковым для каждого состояния, то есть, существует общий префикс и только один поток, в котором путь создания потоков разветвляется на два, а все остальные потоки, которые возникают после раветвления, являются уникальными.
+
+\item $\forall e_1, \dots, e_m \in E, \forall t_1, \dots, t_m \in T:$
+\begin{equation}
+\label{epp_thread_M}
+\begin{aligned}
+& \epp_{M}
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} = \\
+& = \begin{cases}
+& \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
+\left| 
+\begin{array}{c}
+e_i = (l_i, pSet_i, tSet_i, status_i) \\
+dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
+c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \mathbb{N} \\
+\forall i, j \in \overline{1..m}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
+c_m = \{ t_j \mapsto t_i \mid (l_j, l_i) \in TCT(\{e_1, \dots, e_m\}) \\
+\end{array}
+\right.
+\right\rbrace, \\
+& \mbox{if } compatible_{E}(e_1, \dots, e_m), t_i \neq t_j \\
+& \emptyset \mbox{ else}
+\end{cases}
+\end{aligned}
+\end{equation}
+
+\item $\mathcal{I}=\mathcal{E}$. 
+\end{itemize}
+
+{\textbf 2.} Множество точности содержит только один пустой элемент.
+
+{\textbf 3.} Отношение переходов $\tatarrow_F$ содержит переход $e \tat{\tau, g}_F (e', \pi)$, $g=(\cdot,op,\cdot)$, $e = (l, pSet, tSet, rSet, status), e' = (l', pSet', tSet', rSet', status')$ и $e \tat{\tau}_F (i, \pi)$, если $status = Alive$ и $i = e$ и если
+\begin{itemize}
+\item $op \neq tc_{parent}$, $op \neq tc_{child}$, $op \neq thread\_exit$ и $op \neq thread\_join$, $e' = e$.
+\item $op=tc_{child}(var, l_\nu)$, $l' = var$. $tSet' = tSet \cup (var, Child)$, $pSet' = tSet'$ .
+\item $op=tc_{parent}(var, l_\nu)$, $l' = l$. $tSet' = tSet \cup (var, Parent)$, $pSet' = pSet$.
+\item $op=thread\_exit$, $l' = l$, $tSet = pSet$, $tSet' = tSet$, $status' = \{Dead\}$.
+\item $op=thread\_join(var)$, $e' = e \setminus (var, Parent)$ -- это и есть абстракция: анализ не знает, завершен ли соответствующий поток или нет. Поэтому переход всегда выполняется.
+\end{itemize}
+
+Покажем, что требование ~\ref{transfer_tm_ir_stronger_for_inner} выполнено.
+
+Рассмотрм случайное состояние $c_0 \in C: \exists m \in \mathbb{N}, e_1, \dots, e_m \in E_M, t_1, \dots, t_m \in T: c_0 \in \epp_M
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}$
+и случайный переход $c_0 \tc{g,t} c'$.
+
+Так как $c_0 \in \epp_M
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}$ и $c_0 \tc{t} c'$, поэтому $t \in dom(c_0)$, откуда следует $\exists k: t_k = t$. 
+Зафиксируем это значение $k$, тогда $\tau$-переход выполняется из соответствующего $e_k$.
+В соответствии с определением $\epp$~\ref{epp_thread_M}, зафиксируем подмножество $\widehat{\mathbb{N}} \subseteq \mathbb{N}$, такое что $\widehat{\mathbb{N}}=\{num \mid (\cdot, num) \in c^0_l\}$
+
+По определению отношения переходов 3 имеется $e_k \tat{\tau} i_q=e_k$, $\forall q: 1 \le q \le m$. Возьмем $i_q=e_k$.
+
+Замети, что по определению~\ref{epp_thread_M} $\forall q: 1 \le q \le m \land q \neq k: compatible(e_q, e_k)$ и определению отношения переходов 3 следует $e_q \tat{i_q} e_q$. 
+Поэтому переход по эффекту окружения может быть применен, но он не изменит состояния.
+Возьмем $\forall q: 1 \le q \le m \land q \neq k:$ $e_q' = e_q$ .
+
+Пусть $c_0 = (c_{pc}^0, c_l^0, c_g^0, c_s^0, c^0_t, c^0_m)$, $c' = (c_{pc}', c_l', c_g', c_s', c_t', c_m')$, $e_k=(l_k, pSet_k, tSet_k, status_k)$, $e_k'=(l_k', pSet_k', tSet_k', status_k')$.
+Обозначим $TCT(e_1, \dots, e_k, \dots, e_m) = TCT_0$;
+
+{\textit 1)} Рассмотрим случай $g \neq thread\_create$, $g \neq thread\_join$, $g \neq thread\_exit$.
+
+В этом случае по определению отношения переходов 3 $e_k' = e_k$. Поэтому нам нужно показать, что
+$c' \in \epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}$.
+
+По определению операций $g \neq thread\_create$, $g \neq thread\_join$, $g \neq thread\_exit$ получаем $c_t = c_t'$, $dom(c) = dom(c')$. Отсюда следует $c' \in \epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}$, так как $\epp_M$ не зависит от других частей состояний.
+
+{\textit 2)} Рассмотрим случай $g = thread\_exit$. Нам нужно показать 
+\begin{align}
+& \exists k : 1 \le k \le m \land t_k = t \nonumber \\
+& \exists e_1', \dots, e_m' \in E: \nonumber \\
+& c' \in \epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1' \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m' \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} \nonumber \\
+& \mbox{ where } e_1', \dots, e_m' \mbox{ such that } \nonumber \\
+&\exists i_1, \dots, i_{k-1}, i_{k+1}, \dots, i_m: \nonumber \\
+&
+\begin{cases}
+\forall q \neq k, q \neq r: e_q \tat{i_q} e_q' \land i_q \in \{i \mid e_k \tat{\tau} i\} \\
+e_k \tat{\tau} e_k'
+\end{cases} \nonumber 
+\end{align}
+
+В этом случае по определению отношения переходов 3 $l_k'=l_k$, $tSet_k'=pSet_k$, $status_k'=Dead$ , то есть $e_k' = (l_k, pSet_k, tSet_k, Dead)$.
+
+По определению $thread\_exit$ получаем $c_t = c_t'$, $dom(c') = (dom(c) \setminus \{t\})$.
+По предположению анализа~\ref{main_assumption_1} $(\cdot, t) \notin c_m$, $c_m = c_m'$.
+
+\begin{align}
+& \epp_M
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_k' \\
+t_k 
+\end{pmatrix},
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} = (def.~\ref{epp_thread_M}) =\nonumber \\
+& = \begin{cases}
+& \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
+\left| 
+\begin{array}{c}
+e_i = (l_i, pSet_i, tSet_i, status_i) \\
+dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
+c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \mathbb{N} \\
+\forall i, j \in \overline{1..m}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
+c_m = \{ t_j \mapsto t_i \mid (l_j, l_i) \in TCT(\{e_1, \dots, e_m\}) \\
+\end{array}
+\right.
+\right\rbrace, \\
+& \mbox{if } compatible_{E}(\{e_1, \dots, e_k', \dots, e_m), t_i \in T, t_i \neq t_j \\
+& \emptyset \mbox{ else}
+\end{cases} = \nonumber
+\end{align}
+
+Заметим, что $\forall i: 1 \le i \le m, i \neq k: tSet_i' = tSet_i$ и $tSet_k' = pSet_k$.
+По предположению~\ref{main_assumption_1} $(\cdot, t) \notin c_m$, $c_m = c_m'$.
+По определению $\epp$~\ref{epp_thread_M} это означает $(\cdot, l_k) \notin TCT(\{e_1, \dots, e_m\})$.
+По определению $TCT$~\ref{tct} $\forall 1 \le x \le m, 0 \le a \le \infty: (\cdot, \cdot) = label_a \in tSet_x \land (l_k, Child) = label_b \in tSet_x \implies a > b$.
+Поэтому это также верно для $x = k$, это означает, что $tSet$ не содержит никакую пару $(\cdot, \cdot)$ после $(l_k, Child)$.
+Итак, мы показали, что $tSet_k$ не содержит никакую метку после $(l_k, Child)$, что означает
+$tSet_k = pSet_k$ и $tSet_k = tSet_k'$. 
+Это означает $\forall i: 1 \le i \le m: tSet_i' = tSet_i$.
+$TCT$ зависит только от $tSet$ части состояния, поэтому $TCT' = TCT_0$.
+Единственное условие совместности состояний, которое поменялось, это $\forall 1 \le i \le m: status_i = Dead \implies pSet_i = tSet_i$.
+Так как мы только что доказали, что $pSet_k = tSet_k$ и другие состояния не изменилися, поэтому $compatible_E(e_1, \dots, e_k, \dots, e_m) = true$.
+
+\begin{align}
+& = \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
+\left| 
+\begin{array}{c}
+e_i = (l_i, tSet_i, status_i) \\
+dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
+c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \mathbb{N} \\
+\forall i, j \in \overline{1..m}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
+c_m = \{ t_j \mapsto t_i \mid (l_j, l_i) \in TCT(\{e_1, \dots, e_m\}) \\
+\end{array}
+\right.
+\right\rbrace \supseteq \nonumber
+\end{align}
+Выберем только одно подмножество $\mathbb{N} = \widehat{\mathbb{N}}$.
+\begin{align}
+& \supseteq \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
+\left| 
+\begin{array}{c}
+e_i = (l_i, tSet_i, status_i) \\
+dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
+c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \widehat{\mathbb{N}} \\
+\forall i, j \in \overline{1..m}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
+c_m = \{ t_j \mapsto t_i \mid (l_j, l_i) \in TCT(\{e_1, \dots, e_m\}) \\
+\end{array}
+\right.
+\right\rbrace = \nonumber
+\end{align}
+
+Заметим, что $TCT(\{e_1, \dots, e_k', \dots, e_m\}) = TCT(\{e_1, \dots, e_k, \dots, e_m\})$, откуда следует $\forall t_i: c_m(t_i) = c^0_m(t_i)$.
+
+\begin{align}
+& = \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
+\left| 
+\begin{array}{c}
+e_i = (l_i, tSet_i, status_i) \\
+dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
+c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \widehat{\mathbb{N}} \\
+\forall i, j \in \overline{1..m}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
+c_m = c^0_m \\
+\end{array}
+\right.
+\right\rbrace = \nonumber
+\end{align}
+
+Заметим, что $c_0 \in \epp_M
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}$.
+
+Обозначим $dom_M\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} = \{t \mid t = t_i \land e_i=(\cdot, \cdot, status_i) \land status_i = Alive \land i \in \overline{1..m}\}$.
+
+Используя определение $\epp_M$~\ref{epp_thread_M} 
+для $e_1, \dots, e_m$, получаем
+$dom(c_0) = dom_M\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} = \mathbb{T}$.
+Для нового перехода $e_k \tatarrow e_k'$ получаем $dom_M\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_k' \\
+t_k 
+\end{pmatrix} ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} = (status_k' = Dead) = dom_M\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} \setminus \{t_k\} = \mathbb{T} \setminus \{t_k\}$
+\begin{align}
+& = \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
+\left| 
+\begin{array}{c}
+e_i = (l_i, tSet_i, status_i) \\
+dom(c) = \mathbb{T} \setminus \{t_k\} \\
+c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \widehat{\mathbb{N}} \\
+\forall i, j \in \overline{1..m}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
+c_m = c^0_m \\
+\end{array}
+\right.
+\right\rbrace = \tilde{C} \nonumber
+\end{align}
+
+Заметим, что $c'$ отличается от $c_0$ только $dom(c') = dom(c_0) \setminus \{t_k\}$.
+Мы можем сказать, что
+
+$c' \in \{c \mid dom(c) = dom(c_0) \setminus \{t_k\} \land c_t = c^0_{t} \land c_m = c^0_m\} = \tilde{C}$
+
+Это означает $c' \in \epp_M
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_k' \\
+t_k 
+\end{pmatrix},
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}$.
+
+{\textit 3)} Рассмотрим случай $g = thread\_create(var, num, l_\nu)$, теперь нужно показать, что
+
+\begin{align}
+& \exists k : 1 \le k \le m \land t_k = t \nonumber \\
+& \exists e_1', \dots, e_{m+1}' \in E: \nonumber \\
+& c' \in \epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1' \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_{m+1}' \\
+t_{m+1} 
+\end{pmatrix}
+\end{pmatrix} \nonumber \\
+& \mbox{ where } e_1' \dots e_{m+1}' \mbox{ such that } \nonumber \\
+&\exists i_1, \dots, i_{k-1}, i_{k+1}, \dots, i_m: \nonumber \\
+&
+\begin{cases}
+\forall q \neq k: e_q \tat{i_q} e_q' \land i_q \in \{i \mid e_k \tat{\tau} i\} \\
+e_k \tat{\tau, tc_{parent}} e_k' \\
+e_k \tat{\tau, tc_{child}} e_{m+1}'
+\end{cases} \nonumber 
+\end{align}
+
+По определению $thread\_create$ 
+$dom(c') = dom(c_0) \cup \{\nu\}$, $c_t' = c^0_t \cup \{(var, num) \mapsto \nu\}$, $c_m'(t) = c_m(t) \cup \{\nu\}$ и
+$\forall q: 1\le q\le m: \nu \ne t_q$.
+По основному предположению~\ref{main_assumption_2} 
+$\forall n: c_t(var, n) \notin T$.
+Пусть $t_{m+1} = \nu$ и обозначим $e_k' = (l_k', pSet_k', tSet_k', status_k')$, а $e_{m+1}' = (l_{m+1}', pSet_{m+1}', tSet_{m+1}', status_{m+1}')$.
+
+В соответсвтии с определением переходов 3, %tc_child, tc_parent
+$l_k' = l_k$ и $l_{m+1}' = var$. Поэтому
+\begin{align}
+& \epp_M
+\begin{pmatrix}
+\begin{pmatrix}
+e_1' \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_{m+1}' \\
+\nu 
+\end{pmatrix}
+\end{pmatrix} = (def.~\ref{epp_thread_M}) = \nonumber \\
+& = \begin{cases}
+& \left\lbrace (c_{pc},c_l,c_g,c_s,c_t, c_m) \in C 
+\left| 
+\begin{array}{c}
+e_i = (l_i, pSet_i, tSet_i, status_i) \\
+dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
+c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \mathbb{N} \\
+\forall i, j \in \overline{1..m+1}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
+c_m = \{ t_j \mapsto t_i \mid (l_j, l_i) \in TCT(\{e_1, \dots, e_k', \dots, e_{m+1}'\}) \\
+\end{array}
+\right.
+\right\rbrace, \\
+& \mbox{if } \forall i \neq j: compatible_{E}(\{e_1, \dots, e_k', \dots, e_{m+1}'\}), t_i \in T, t_i \neq t_j \\
+& \emptyset \mbox{ else}
+\end{cases} = \nonumber
+\end{align}
+
+Покажем, что $compatible_E(e_1, \dots, e_k', \dots, e_{m+1}')$.
+Обозначим $e_k' = (l_k', pSet_k', tSet_k', status_k')$, $e_{m+1}' = (l_{m+1}', pSet_{m+1}', tSet_{m+1}', status_{m+1}')$.
+$tSet_k' = tSet_k \cup (var, Parent)$, $tSet_{m+1}' = tSet \cup (var, Child)$.
+$TCT' = TCT(\{e_1, \dots, e_k', \dots, e_{m+1}'\}) = TCT_0 \cup {(var, l_k)}$. 
+Чтобы проверить $compatible_E(e_1, \dots, e_k', \dots, e_{m+1}')$, нам нужно показать три основные части:
+\begin{enumerate}
+\item $\forall (v_i, v_j) \in TCT(\{e_1, \dots, e_k', \dots, e_{m+1}'\}): (v_i, v_k) \in TCT(\{e_1, \dots, e_k', \dots, e_{m+1}'\}) \implies l_k = l_j$
+Так как $TCT' = TCT_0 \cup {(var, l_k)}$ нам нужно проверить, есть ли другая пара $(var, \cdot)$.
+Предствим, что условие нарушено и $\exists 1 \le f \le m: (var, l_f) \in TCT_0$.
+Это означает, что $\exists n_v, n_f \in \mathbb{N}: c^0_m(var, n_v) = t_f \land t_f = c_t(l_f, n_f) \land TCT_g(var, l_f)$.
+Теперь попытаемся выполнить переход$c_0 \tat{t, g} c'$, $g = thread\_create(var, num, l_{\nu})$ и $t \neq l_f$. 
+%??????
+% how follows
+Этот случай противоречит основному предположению~\ref{main_assumption_4}.
+Поэтому $(var, \cdot) \notin TCT_0$ и условие выполнено.
+\item $\forall i \neq j: compatible_{TM}(e_i, e_j)$
+Так как $\forall 1 \le i \le m, i \neq k: tSet_i' = tSet_i$ нам нужно только проверить $i = k$ и $i = m +1$.
+\begin{itemize}
+\item Рассмотрим $e_j:j \neq k \land j \neq m + 1$ и $e_k'$. 
+$tSet_k' = tSet_k \cup (var, Parent)$. Рассмотрим случайное множество $tSet_j$. Так как известно, что $compatible(e_j, e_k)$, это означает, что 
+\begin{align}
+& \exists 0 \le p_1, p_2 \le \infty: var^k_{p_1} = var^j_{p_2} \land status^k_{p_1} \neq status^j_{p_2} \nonumber
+\end{align}
+Теперь представим, что $compatible(e_k', e_j) = false$. Так как множество $tSet_k'$ только шире, это означает, что существует такие же $p_1, p_2: var^{k'}_{p_1} = var^j_{p_2} \land status^{k'}_{p_1} \neq status^j_{p_2}$.
+\item Рассмотрим $e_j:j \neq k \land j \neq m + 1$ и $e_{m+1}'$. Этот случай такой же, как и предыдущий.
+\item Рассмотрим $e_k'$ и $e_{m+1}'$.
+$\exists(var, Parent) \in tSet_k' \land (var, Child) \in tSet_{m+1}'$. Эта пара удовлетворяет условию на $compatible$, что означает$compatible_M(e_k, e_{m+1}')$
+\end{itemize}
+Так, мы показали, что все новые состояния $e_i'$ и $e_j'$ являются совместными.
+\item $\forall 1 \le i \le m+1: status_i = Dead \implies pSet_i = tSet_i$.
+Заметим, что $\forall 1 \le i \le m: status_i' = status_i$ и $status_{m+1}' = Alive$.
+Если предыдущие состояния были совместны, тогда следующие состояния также удовлетворяют этому условию.
+\item $\forall 1 \le i \le m+1: (l_i, Child) \in pSet_i$.
+Заметим, что $\forall 1 \le i \le m: pSet_k' = pSet_k$. Ничего не изменилось
+$pSet_{m+1} = tSet_{m+1}' = tSet_k \cup \{(var, Child)\}$ и $l_{m+1} = var$. Поэтому условие выполнено.
+\item $\forall 1 \le i \le m, 0 \le x \le \infty, y > x: (l_i, Child) = label_x \in tSet_i \implies \forall label_y = (v_y, status_y) \in tSet_i \land status_y = Parent$.
+Заметим, что $\forall 1 \le i \le m, i \neq k: tSet_i' = tSet_i$. Ничего не изменилось.
+$tSet_k' = tSet_k \cup \{(var, Parent)\}$. Условие все еще вероне, так как мы не добавили метку $Child$.
+$tSet_{m+1}' = tSet_k \cup \{(var, Child)\}$. Условие верное, так как после метки $Child$ нет ни одной метки.
+\end{enumerate}
+
+\begin{align}
+& = \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
+\left| 
+\begin{array}{c}
+e_i = (l_i, tSet_i, status_i) \\
+dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
+c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \mathbb{N} \\
+\forall i, j \in \overline{1..m+1}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
+c_m = \{ t_j \mapsto t_i \mid (l_j, l_i) \in TCT(\{e_1, \dots, e_k', \dots, e_{m+1}'\}) \\
+\end{array}
+\right.
+\right\rbrace \supseteq \nonumber
+\end{align}
+
+Выберем $\tilde{\mathbb{N}} = \widehat{\mathbb{N}} \cup \{num\}$.
+
+\begin{align}
+& \supseteq \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
+\left| 
+\begin{array}{c}
+e_i = (l_i, tSet_i, status_i) \\
+dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
+c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \tilde{\mathbb{N}} \\
+\forall i, j \in \overline{1..m+1}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
+c_m = \{ t_j \mapsto t_i \mid (l_j, l_i) \in TCT(\{e_1, \dots, e_k', \dots, e_{m+1}'\}) \\
+\end{array}
+\right.
+\right\rbrace = \nonumber
+\end{align}
+
+Заметим, что $TCT' = TCT(\{e_1, \dots, e_k', \dots, e_{m+1}'\}) = TCT_0 \cup {(var, l_k)}$. Откуда следует $c_m'(\nu) = c_m(t_k)$.
+
+\begin{align}
+& = \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
+\left| 
+\begin{array}{c}
+e_i = (l_i, tSet_i, status_i) \\
+dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
+c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \tilde{\mathbb{N}} \\
+\forall i, j \in \overline{1..m+1}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
+c_m(t_i) = \begin{cases}
+c^0_m(t_i)&, \mbox{ if } i \neq m+1 \\
+t&, \mbox{ if } i = m+1 \\
+\end{cases}
+\end{array}
+\right.
+\right\rbrace = \nonumber
+\end{align}
+
+Используя определение $\epp_M$~\ref{epp_thread_M}
+для $e_1, \dots, e_m$ получаем
+$dom(c_0) = dom_M\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} = \mathbb{T}$.
+Для нового перехода $e_k \tatarrow e_k'$ и $e_k \tatarrow e_{m+1}'$ получаем $dom_M\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_k' \\
+t_k 
+\end{pmatrix} ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix},
+\begin{pmatrix}
+e_{m+1}' \\
+\nu 
+\end{pmatrix}
+\end{pmatrix} = (status_{m+1}' = Alive) = dom_M\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} \cup \{\nu\} = \mathbb{T} \cup \{\nu\}$
+
+\begin{align}
+& = \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
+\left| 
+\begin{array}{c}
+e_i = (l_i, tSet_i, status_i) \\
+dom(c) = \mathbb{T} \cup \{\nu\}\\
+c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \tilde{\mathbb{N}} \\
+\forall i, j \in \overline{1..m+1}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
+c_m(t_i) = \begin{cases}
+c^0_m(t_i)&, \mbox{ if } i \neq m+1 \\
+t&, \mbox{ if } i = m+1 \\
+\end{cases}
+\end{array}
+\right.
+\right\rbrace = \tilde{C} \nonumber 
+\end{align}.
+
+Заметим, что $c'$ отличается от $c_0$ только $dom(c') = dom(c_0) \cup \{\nu\}$, $c_t' = c^0_t \cup \{(var, num) \mapsto \nu\}$ и $c_m'(t_k) = c^0_m(t_k) \cup \{\nu\}$.
+Можно сказать, что
+
+$c' \in \{c \in C \mid dom(c) = dom(c_0)  \cup \{\nu\} \land c_t' = c^0_t \cup \{(var, num) \mapsto \nu\} \land c_m' = c^0_m \cup \{\nu \mapsto t_k\} \} = \tilde{C}$
+
+Это означает $c' \in \epp_M
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_k' \\
+t_k 
+\end{pmatrix},
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix},
+\begin{pmatrix}
+e_{m+1} \\
+\nu 
+\end{pmatrix}
+\end{pmatrix}$.
+
+{\textit 4)} Рассмотрим случай $g = thread\_join(var, num)$, теперь нужно показать, что
+
+\begin{align}
+& \exists k : 1 \le k \le m \land t_k = t \nonumber \\
+& \exists r \in \overline{1..m}: \exists e_1', \dots, e_m' \in E: \nonumber \\
+& c' \in \epp
+\begin{pmatrix}
+\begin{pmatrix}
+e_1' \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_{r-1}' \\
+t_{r-1} 
+\end{pmatrix} ,
+\begin{pmatrix}
+e_{r+1}' \\
+t_{r+1} 
+\end{pmatrix},
+\dots& ,
+\begin{pmatrix}
+e_m' \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} \nonumber \\
+& \mbox{ where } e_1', \dots, e_{r-1}, e_{r+1}, \dots, e_m' \mbox{ such that } \nonumber \\
+&\exists i_1, \dots, i_{k-1}, i_{k+1}, \dots, i_m: \nonumber \\
+&
+\begin{cases}
+\forall q \neq k, q \neq r: e_q \tat{i_q} e_q' \land i_q \in \{i \mid e_k \tat{\tau} i\} \\
+e_k \tat{\tau} e_k'
+\end{cases} \nonumber 
+\end{align}
+
+По определению $thread\_join$
+$\exists t: t = c_t(var, num) \land t \notin dom(c)$, $c_t' = c^0_t \setminus \{(var, num) \mapsto t\}$, $c_m' = c^0_m \setminus (t, \cdot)$.
+По определению отношения переходов $transfer$~3
+$e_k' = (l_k', pSet_k', tSet_k', Active)$, $tSet_k' = tSet_k \setminus \{(var, Parent)\}$, $pSet_k' = pSet_k$.
+
+Так как $\exists t: t \notin dom(c) \land c_t(var, num) = t \land c \in \epp_M
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}$, 
+, это означает $\exists r: t_r = t \land e_r = (l_r, pSet_r, tSet_r, Exit)$ (определение $\epp$~\ref{epp_thread_M}).
+
+Заметим, что $r \neq k$, потому что ни одна операция не может быть выполнена после $thread\_join$.
+
+Сейчас нужно показать, что
+$c' \in \epp_M
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}&,
+\dots& ,
+\begin{pmatrix}
+e_{r-1} \\
+t_{r-1} 
+\end{pmatrix},
+\begin{pmatrix}
+e_{r+1} \\
+t_{r+1} 
+\end{pmatrix},
+\dots& ,
+\begin{pmatrix}
+e_k' \\
+t_k 
+\end{pmatrix} ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}
+$
+
+\begin{align}
+& \epp_M
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}&,
+\dots&,
+\begin{pmatrix}
+e_{r-1} \\
+t_{r-1} 
+\end{pmatrix},
+\begin{pmatrix}
+e_{r+1} \\
+t_{r+1} 
+\end{pmatrix},
+\dots& ,
+\begin{pmatrix}
+e_k' \\
+t_k 
+\end{pmatrix} ,
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix} = (def.~\ref{epp_thread_M}) = \nonumber \\
+& = \begin{cases}
+& \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
+\left| 
+\begin{array}{c}
+e_i = (l_i, pSet_i, tSet_i, status_i) \\
+dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
+c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \mathbb{N} \\
+\forall i, j \in \overline{1..m}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
+c_m = \{ t_j \mapsto t_i \mid (l_j, l_i) \in TCT(\{e_1, \dots, e_{r-1}, e_{r+1}, \dots, e_k', \dots, e_m\}) \\
+\end{array}
+\right.
+\right\rbrace, \\
+& \mbox{if } \forall i \neq j: compatible_{E}(\{e_1, \dots, e_{r-1}, e_{r+1}, \dots, e_k', \dots, e_m\}), t_i \in T, t_i \neq t_j \\
+& \emptyset \mbox{ else}
+\end{cases} = \nonumber
+\end{align}
+
+Покажем, что новые состояний все еще совместны.
+В соответствии с основным предположением~\ref{main_assumption_1} $\forall t_c \in T: c^0_m(t_c) \neq t_r$.
+Нам нужно проверить только
+
+\begin{enumerate}
+\item $\forall (v_i, v_j) \in TCT(\{e_1, \dots, e_{r-1}, e_{r+1}, \dots, e_m\}): (v_i, v_k) \in TCT(\{e_1, \dots, e_{r-1}, e_{r+1}, \dots, e_m\}) \implies v_k = v_j$.
+Удаление одного состояния $e_r$ и одной метки $(l_r, Parent)$ из состояния $e_k$ может только удалить дуги и не может изменить существующие направления. Поэтому глобальная структура графа не может измениться.
+\item $\forall i \neq j: compatible_{TM}(e_i, e_j)$.
+По определению $\epp$~\ref{epp_thread_M} $(l_r, l_k) \in TCT_0$.
+По определению TCT~\ref{tct} $\forall 1 \le x \le m: (l_r, \cdot) \in tSet_x \implies (l_k, Child) \in tSet_x$.
+По определению $compatible_E$~\ref{compatible_E_thread_M} $status_r = Dead \implies pSet_r = tSet_r$.
+По определению $compatible_E$~\ref{compatible_E_thread_M} $(l_r, Child) \in pSet_r = tSet_r$.
+Так как $(l_r, l_k) \in TCT_0$, $tSet_r = \{\dots, (l_k, Child), (\cdot, Parent), \dots, (\cdot, Parent), (l_r, Child)\}$.
+По определению $compatible_E$~\ref{compatible_E_thread_M} $tSet_k = \{\dots, (l_k, Child), (\cdot, Parent), \dots, (\cdot, Parent)\}$.
+Заметим, что части последовательностей $tSet_r$ и $tSet_k$ до $(l_k, Child)$ должны быть одинаковы, иначе $TCT$ будет отличаться.
+По определению $compatible_E$~\ref{compatible_E_thread_M} $compatible_{TM}(e_k, e_r)$.
+Единственная возможность, чтобы быть совместными -- это $(l_r, Parent) \in tSet_k$, $l_r = var$.
+Сейчас нужно показать, что после удаления $(l_r, Parent)$ из $tSet_k$ другие состояния остаются совместными.
+Представим, что $\exists s \neq r: compatible(e_s, e_k) \land (compatible(e_s, e_k') = false)$. 
+Это означает, что $(var, Child) \in tSet_s$. Так как $s \neq r$, $l_s \neq l_r$~\ref{main_assumption_4}.
+%!!!!!!!!!!!!!!!!!
+
+По определению $compatible_E$~\ref{compatible_E_thread_M}, $(l_s, Child) \in tSet_s$.
+Более того, соответствующая метка $(l_s, Child)$ должна быть последней меткой в последовательности $tSet_s$.
+$tSet_s = \{\dots, (l_r, Child), \dots, (l_s, Child)\}, (\cdot, Parent), \dots\}$.
+Заметим, что части до $(l_r, Child)$ должны быть равны для обоих $tSet_r$ и $tSet_s$, иначе TCT разрушится.
+Это означает, что $compatible_E(e_s, e_r) = false$.
+И $\forall s: compatible(e_s, e_k) \land compatible(e_s, e_k')$
+\item $\forall 1 \le i \le m: status_i = Dead \implies pSet_i = tSet_i$.
+Так как статусы не менялись, условие выполнено.
+\item $\forall 1 \le i \le m: (l_i, Child) \in pSet_i$.
+Так как $\forall 1 \le i \le m: pSet_i' = pSet_i$ соответствующее условие выполнено.
+\item $\forall 1 \le i \le m, 0 \le x \le \infty, y > x: (l_i, Child) = label_x \in tSet_i \implies  \forall label_y = (v_y, status_y) \in tSet_i \land status_y = Parent$.
+Так как $\forall 1 \le i \le m, i \neq k, i \neq r: tSet_i' = tSet_i$ соответствующее условие выполнено.
+$tSet_k' = tSet_k \setminus \{(l_r, Parent)\}$. Метки$(\cdot, Child)$ не изменились, поэтому условие выполено.
+\end{enumerate}
+
+\begin{align}
+& = \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
+\left| 
+\begin{array}{c}
+e_i = (l_i, tSet_i, status_i) \\
+dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
+\exists \mathbb{M} \subseteq \overline{1..m}: \\
+c_t = \{(l_i, num_i) \mapsto t_i\} \land i \in \mathbb{M} \\
+num_i \in \mathbb{N}, e_i = (l_i, \cdot), i \in \mathbb{M} \\
+\forall i, j \in \mathbb{M}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
+c_m = \{t_i \mapsto W_i \mid W_i = \{t_j \mid (l_j, \cdot) \in tSet_i \setminus pSet_i \}\} \\
+\end{array}
+\right.
+\right\rbrace \supseteq \nonumber
+\end{align}
+
+Выберем $\tilde{\mathbb{M}} = \widehat{\mathbb{M}} \setminus \{r\}$.
+
+\begin{align}
+& \supseteq \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
+\left| 
+\begin{array}{c}
+e_i = (l_i, tSet_i, status_i) \\
+dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
+c_t = \{(l_i, num_i) \mapsto t_i\} \land i \in \tilde{\mathbb{M}} \\
+num_i \in \mathbb{N}, e_i = (l_i, \cdot), i \in \tilde{\mathbb{M}} \\
+\forall i, j \in \widehat{\mathbb{M}}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
+c_m = \{t_i \mapsto W_i \mid W_i = \{t_j \mid (l_j, \cdot) \in tSet_i \setminus pSet_i \}\} \\
+\end{array}
+\right.
+\right\rbrace = \tilde{C} \nonumber
+\end{align}
+
+$c'$ отличается от $c_0$ только удалением $(var, num)$ из $c_t$. 
+Можно сказать, что
+
+$c' \in \{c \in C \mid dom(c) = dom(c_0)  \cup \{\nu\} \land c_t' = c^0_t \setminus \{(var, num) \mapsto t_r\} \} = \tilde{C}$
+
+Это означает $c' \in \epp_M
+\begin{pmatrix}
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix}& ,
+\dots& ,
+\begin{pmatrix}
+e_k' \\
+t_k 
+\end{pmatrix},
+\dots& ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\end{pmatrix}$.
+
+%We have the transfer $\top \tat{\tau, g}_T (\top, \pi)$ for all $g\in G$.
+
+%$\forall t,i \in E_T: compatible^E(t,i) \implies t \tat{i, g}_T (t, \pi)$, because 
+%\begin{itemize}
+%\item inference object guards the transfer by checking inequality of thread identifiers in compatible,
+%\item states are {\em invariant to environment}, i.e. no thread can change an identifier of the other thread.
+%\end{itemize}
+
+{\textbf 4.} Оператор слияния состояний не объединяет элементы: $merge^E_T(e, e', \pi) = e'$.
+
+{\textbf 5.} Оператор слияния эффектов окружения не объединяет элементы: $merge^I_T(i, i', \pi) = i'$.
+
+{\textbf 6.} Оператор останова для состояний рассматривает абстрактные состояния по одному: $stop^E_T(e, R, \pi) = (e \in R)$.
+
+{\textbf 7.} Оператор останова для эффектов окружения всегда истиннен: $stop^I_T(i, R, \pi) = true$, так как эффекты окружения не могут изменить состояние.
+
+{\textbf 8.} Состояния и точностть никогда не изменяются: $prec^E_T(e, \pi, R) = (e, \pi)$.
+
+{\textbf 9.} Эффекты окружения и точностть никогда не изменяются: $prec^I_T(i, \pi, R) = (i, \pi)$.
+
+{\textbf 10.} 
+\begin{equation}
+\label{compatible_thread}
+\begin{aligned}
+& e = (l^e, tSet^e, status^e), i = (l^i, tSet^i, status^i), \\
+& compatible_T(e,i) = \exists (var, \cdot): \\
+& (var, s_e) \in tSet_e \land  (var, s_i) \in tSet_i \land s_e \neq s_i \land \\
+& (var, s_e') \in tSet_e \implies s_e = s_e' \land \\
+& (var, s_i') \in tSet_i \implies s_i = s_i'
+\end{aligned}
+\end{equation}
+
 
 %\newpage
 %============================================================================================================================
-\section{Длинное название параграфа, в котором мы узнаём как сделать две картинки с~общим номером и названием} \label{sect2_2}
-
-А это две картинки под общим номером и названием:
-\begin{figure}[ht]
-  \begin{minipage}[ht]{0.49\linewidth}\centering
-    \includegraphics[width=0.5\linewidth]{knuth1} \\ а)
-  \end{minipage}
-  \hfill
-  \begin{minipage}[ht]{0.49\linewidth}\centering
-    \includegraphics[width=0.5\linewidth]{knuth2} \\ б)
-  \end{minipage}
-  \caption{Очень длинная подпись к изображению, на котором представлены две фотографии Дональда Кнута}
-  \label{img:knuth}  
-\end{figure}
-
-Те~же~две картинки под~общим номером и~названием, но с автоматизированной нумерацией подрисунков:
-\begin{figure}[ht]
-    {\centering
-        \hfill
-        \subbottom[List-of-Figures entry][Первый подрисунок\label{img:knuth_2_1}]{%
-            \includegraphics[width=0.25\linewidth]{knuth1}}
-        \hfill
-        \subbottom[\label{img:knuth_2_2}]{%
-            \includegraphics[width=0.25\linewidth]{knuth2}}
-        \hfill
-        \subbottom[Третий подрисунок]{%
-            \includegraphics[width=0.3\linewidth]{example-image-c}}
-        \hfill
-    }
-    \legend{Подрисуночный текст, описывающий обозначения, например. Согласно
-    ГОСТ 2.105, пункт 4.3.1, располагается перед наименованием рисунка.}
-    \caption[Этот текст попадает в названия рисунков в списке рисунков]{Очень
-    длинная подпись к второму изображению, на котором представлены две
-    фотографии Дональда Кнута}
-    \label{img:knuth_2}
-\end{figure}
-
-Возможно вставлять векторные картинки, рассчитываемые \LaTeX\ <<на~лету>>
-с~их~предварительной компиляцией. Надписи в таких рисунках будут выполнены
-тем же~шрифтом, который указан для документа в целом.
-На рисунке~\ref{img:tikz_example} на~странице~\pageref{img:tikz_example} представлен пример схемы, рассчитываемой пакетом \verb|tikz| <<на~лету>>.
-Для ускорения компиляции, подобные рисунки могут быть <<кешированы>>, что
-определяется настройками в~\verb|common/setup.tex|.
-Причём имя предкомпилированного
-файла и папка расположения таких файлов могут быть отдельно заданы,
-что удобно, если не для подготовки диссертации,
-то для подготовки научных публикаций.
-\begin{figure}[ht]
-    {\centering
-        \ifdefmacro{\tikzsetnextfilename}{\tikzsetnextfilename{tikz_example_compiled}}{}% присваиваемое предкомпилированному pdf имя файла
-        \input{Dissertation/images/tikz_scheme.tikz}
-
-    }
-    \legend{}
-    \caption[Пример \texttt{tikz} схемы]{Пример рисунка, рассчитываемого
-        \texttt{tikz}, который может быть предкомпилирован}
-    \label{img:tikz_example}
-\end{figure}
-
-Множество программ имеют либо встроенную возможность экспортировать векторную
-графику кодом \verb|tikz|, либо соответствующий пакет расширения.
-Например, в GeoGebra есть встроенный экспорт,
-для Inkscape есть пакет svg2tikz,
-для Python есть пакет matplotlib2tikz,
-для R есть пакет tikzdevice.
-
-
-\section{Традиции русского набора}
-
-\subsection{Пробелы}
-
-В~русском наборе принято:
-\begin{itemize}
-    \item единицы измерения, знак процента отделять пробелами от~числа: 10~кВт, 15~\% (согласно ГОСТ 8.417, раздел 8);
-    \item $\tg 20^\circ$, но: 20~${}^\circ$C (согласно ГОСТ 8.417, раздел 8);
-    \item знак номера, параграфа отделять от~числа: №~5, \S~8;
-    \item стандартные сокращения: т.\:е., и~т.\:д., и~т.\:п.;
-    \item неразрывные пробелы в~предложениях.
-\end{itemize}
-
-\subsection{Математические знаки и символы}
-
-Русская традиция начертания греческих букв и некоторых математических
-функций отличается от~западной. Это исправляется серией
-\verb|\renewcommand|.
-\begin{itemize}
-%Все \original... команды заранее, ради этого примера, определены в Dissertation\userstyles.tex
-    \item[До:] \( \originalepsilon \originalge \originalphi\),
-    \(\originalphi \originalleq \originalepsilon\),
-    \(\originalkappa \in \originalemptyset\),
-    \(\originaltan\),
-    \(\originalcot\),
-    \(\originalcsc\).
-    \item[После:] \( \epsilon \ge \phi\),
-    \(\phi \leq \epsilon\),
-    \(\kappa \in \emptyset\),
-    \(\tan\),
-    \(\cot\),
-    \(\csc\).
-\end{itemize}
-
-Кроме того, принято набирать греческие буквы вертикальными, что
-решается подключением пакета \verb|upgreek| (см. закомментированный
-блок в~\verb|userpackages.tex|) и~аналогичным переопределением в
-преамбуле (см.~закомментированный блок в \verb|userstyles.tex|). В
-этом шаблоне такие переопределения уже включены.
-
-Знаки математических операций принято переносить. Пример переноса
-в~формуле \eqref{eq:equation3}.
-
-\subsection{Кавычки}
-В английском языке приняты одинарные и двойные кавычки в~виде ‘...’ и~“...”. В России приняты французские («...») и~немецкие („...“) кавычки (они называются «ёлочки» и~«лапки», соответственно). <<Лапки>> обычно используются внутри ,,ёлочек``, например, <<... наш гордый ,,Варяг``...>>.
-
-Французкие левые и правые кавычки набираются
-как лигатуры \verb|<<| и \verb|>>|, а~немецкие левые и правые кавычки набираются как лигатуры \verb|,,| и \verb|‘‘| (\verb|``|).
-
-Вместо лигатур или команд с~активным символом "\ можно использовать команды \verb|\glqq| и \verb|\grqq| для набора немецких кавычек и команды \verb|\flqq| и~\verb|\frqq| для набора французских кавычек. Они определены в пакете \verb|babel|.
-
-\subsection{Тире}
-%  babel+pdflatex по умолчанию, в polyglossia надо включать опцией (и перекомпилировать с удалением временных файлов)
-Команда \verb|"---| используется для печати тире в тексте. Оно несколько короче английского длинного тире. Кроме того, команда задаёт небольшую жёсткую отбивку от слова, стоящего перед тире. При этом, само тире не отрывается от~слова. После тире следует такая же отбивка от текста, как и перед тире. При наборе текста между словом и командой, за которым она следует, должен стоять пробел.
-
-В составных словах, таких, как <<Закон Менделеева"--~Клапейрона>>, для печати тире надо использовать команду \verb|"--~|. Она ставит более короткое, по~сравнению с~английским, тире и позволяет делать переносы во втором слове. При~наборе текста команда \verb|"--~| не отделяется пробелом от слова, за которым она следует (\verb|Менделеева"--~|). Следующее за командой слово может быть  отделено от~неё пробелом или перенесено на другую строку.
-
-Если прямая речь начинается с~абзаца, то перед началом её печатается тире командой
-\verb|"--*|. Она печатает русское тире и жёсткую отбивку нужной величины перед текстом.
-
-\subsection{Дефисы и переносы слов}
-%  babel+pdflatex по умолчанию, в polyglossia надо включать опцией (и перекомпилировать с удалением временных файлов)
-Для печати дефиса в~составных словах введены две команды. Команда~\verb|"~| печатает дефис и~запрещает делать переносы в~самих словах, а~команда \verb|"=| печатает дефис, оставляя \TeX ’у право делать переносы в~самих словах.
-
-В отличие от команды \verb|\-|, команда \verb|"-| задаёт место в~слове, где можно делать перенос, не~запрещая переносы и~в~других местах слова.
-
-Команда \verb|""| задаёт место в~слове, где можно делать перенос, причём дефис при~переносе в~этом месте не~ставится.
-
-Команда \verb|",| вставляет небольшой пробел после инициалов с~правом переноса в~фамилии.
+%\section{Длинное название параграфа, в котором мы узнаём как сделать две картинки с~общим номером и названием} \label{sect2_2}
+%
+%А это две картинки под общим номером и названием:
+%\begin{figure}[ht]
+%  \begin{minipage}[ht]{0.49\linewidth}\centering
+%    \includegraphics[width=0.5\linewidth]{knuth1} \\ а)
+%  \end{minipage}
+%  \hfill
+%  \begin{minipage}[ht]{0.49\linewidth}\centering
+%    \includegraphics[width=0.5\linewidth]{knuth2} \\ б)
+%  \end{minipage}
+%  \caption{Очень длинная подпись к изображению, на котором представлены две фотографии Дональда Кнута}
+%  \label{img:knuth}  
+%\end{figure}
+%
+%Те~же~две картинки под~общим номером и~названием, но с автоматизированной нумерацией подрисунков:
+%\begin{figure}[ht]
+%    {\centering
+%        \hfill
+%        \subbottom[List-of-Figures entry][Первый подрисунок\label{img:knuth_2_1}]{%
+%            \includegraphics[width=0.25\linewidth]{knuth1}}
+%        \hfill
+%        \subbottom[\label{img:knuth_2_2}]{%
+%            \includegraphics[width=0.25\linewidth]{knuth2}}
+%        \hfill
+%        \subbottom[Третий подрисунок]{%
+%            \includegraphics[width=0.3\linewidth]{example-image-c}}
+%        \hfill
+%    }
+%    \legend{Подрисуночный текст, описывающий обозначения, например. Согласно
+%    ГОСТ 2.105, пункт 4.3.1, располагается перед наименованием рисунка.}
+%    \caption[Этот текст попадает в названия рисунков в списке рисунков]{Очень
+%    длинная подпись к второму изображению, на котором представлены две
+%    фотографии Дональда Кнута}
+%    \label{img:knuth_2}
+%\end{figure}
+%
+%\section{Традиции русского набора}
+%
+%\subsection{Пробелы}
+%
+%В~русском наборе принято:
+%\begin{itemize}
+%    \item единицы измерения, знак процента отделять пробелами от~числа: 10~кВт, 15~\% (согласно ГОСТ 8.417, раздел 8);
+%    \item $\tg 20^\circ$, но: 20~${}^\circ$C (согласно ГОСТ 8.417, раздел 8);
+%    \item знак номера, параграфа отделять от~числа: №~5, \S~8;
+%    \item стандартные сокращения: т.\:е., и~т.\:д., и~т.\:п.;
+%    \item неразрывные пробелы в~предложениях.
+%\end{itemize}
+%
+%\subsection{Математические знаки и символы}
+%
+%Русская традиция начертания греческих букв и некоторых математических
+%функций отличается от~западной. Это исправляется серией
+%\verb|\renewcommand|.
+%\begin{itemize}
+%%Все \original... команды заранее, ради этого примера, определены в Dissertation\userstyles.tex
+%    \item[До:] \( \originalepsilon \originalge \originalphi\),
+%    \(\originalphi \originalleq \originalepsilon\),
+%    \(\originalkappa \in \originalemptyset\),
+%    \(\originaltan\),
+%    \(\originalcot\),
+%    \(\originalcsc\).
+%    \item[После:] \( \epsilon \ge \phi\),
+%    \(\phi \leq \epsilon\),
+%    \(\kappa \in \emptyset\),
+%    \(\tan\),
+%    \(\cot\),
+%    \(\csc\).
+%\end{itemize}
+%
+%Кроме того, принято набирать греческие буквы вертикальными, что
+%решается подключением пакета \verb|upgreek| (см. закомментированный
+%блок в~\verb|userpackages.tex|) и~аналогичным переопределением в
+%преамбуле (см.~закомментированный блок в \verb|userstyles.tex|). В
+%этом шаблоне такие переопределения уже включены.
+%
+%Знаки математических операций принято переносить. Пример переноса
+%в~формуле \eqref{eq:equation3}.
 
 \begin{multline*}
 \mathsf{Pr}(\digamma(\tau))\propto\sum_{i=4}^{12}\left( \prod_{j=1}^i\left( \int_0^5\digamma(\tau)e^{-\digamma(\tau)t_j}dt_j \right)\prod_{k=i+1}^{12}\left( \int_5^\infty\digamma(\tau)e^{-\digamma(\tau)t_k}dt_k\right)C_{12}^i \right)\propto\\

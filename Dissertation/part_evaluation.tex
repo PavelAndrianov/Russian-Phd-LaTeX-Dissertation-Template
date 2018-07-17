@@ -1,6 +1,150 @@
 \chapter{Результаты экспериментов}
 \label{chapter_evaluation}
 
+Было реализовано две основные модификации анализа с раздельным рассмотрением потоков с эффектами окружения
+\begin{enumerate}
+\item $\mathbb{C_1}(\mathbb{L}, \mathbb{CS}, \mathbb{T}, \mathbb{S}, \mathbb{P})$ -- включает анализ потоков, ограниченный количеством создаваемых потоков;
+\item $\mathbb{C_2}(\mathbb{L}, \mathbb{CS}, \mathbb{S}, \mathbb{P})$ -- поддерживает неограниченное создание потоков;
+\end{enumerate}
+с объединением эффектов окружения анализа предикатов $\mathbb{P}$ при равных состояниях другив видов анализа $\mathbb{T}$, $\mathbb{S}$
+(то есть, равных точках программы, стеках вызова, потоках и множествах захваченных блокировок),\\
+где
+\begin{itemize}
+\item Анализ точек программы $\mathbb{L}$~(раздел \ref{sect_location_analysis})
+\item Анализ стеков вызова $\mathbb{CS}$~(not described in the paper, remove it?)
+\item Анализ потоков $\mathbb{T}$~(раздел \ref{sect_thread_analysis}),
+\item Анализ примитивов синхронизации $\mathbb{S}$%~(раздел \ref{sect_lock_analysis}), 
+с опцией 
+\begin{enumerate}
+\item {\em EmptyLockset=true/false}
+\begin{itemize}
+\item true -- отключить эффекты окружения, используя $empty$ эффект окружения (всегда является совместным)
+\item false -- использовать множества захваченных блокировок, как эффект окружения (проверять пересечение захваченных блокировок при вычислении совместности).
+\end{itemize}
+\end{enumerate}
+
+\item Анализ предикатов $\mathbb{P}$~(раздел \ref{sect_predicate_analysis}).
+с опциями:
+\begin{itemize}
+\item {\em Merge=Join}. Объединение первой (условие) и второй (формула перехода) части эффекта окружения.
+\item {\em Merge=Eq}. Объединение эффектов окружения при одинаковом условии (то есть, при равных предикатных абстракциях).
+\item {\em Merge=Sep}. Не объединять эффекты никогда.
+\end{itemize}
+\end{itemize}
+
+TODO: add $\mathbb{C_2}$.
+Now only $\mathbb{C_1}$ is presented.
+
+Подходы для сравнения
+\begin{enumerate}
+\item Варианты анализа с эффектами окружения
+\begin{enumerate}
+\item {\textbf EmptyLockset} -- отключение условие на проверку множества захваченных блокировок {\em EmptyLockset=true} и {\em Merge=Join} опции в анализе предикатов.
+\item Включенная опция {\em EmptyLockset=false} с вариантами объединения для анализа предикатов
+\begin{enumerate}
+\item {\textbf MergeJoin}. Объединять обе части эффекта окружения({\em Merge=Join}). 
+\item {\textbf MergeEq}. Объединять эффекты только для равных условий ({\em Merge=Eq}).
+\item {\textbf MergeSep}. Не объединять эффекты ({\em Merge=Sep}). 
+\end{enumerate}
+\end{enumerate}
+\item {\textbf Threading}. ThreadingCPA
+described in~\cite{MEMICS16-Multi-Threaded} uses Classic CPA (see section~\ref{sect_classic_cpa}).
+\item Other tools YogarCBMC, SMACK, CSeq, ESBMC
+\end{enumerate}
+
+%----------------------------------------------------
+\subsection{Evaluation on Linux Device Drivers}
+We have 32 benchmarks prepared from 16 known bugs found during GSoC 2017 http://linuxtesting.org/28-08-2017
+(to be added to the SV-COMP subcategory SoftwareSystems Concurrency). For each bug we have {\em false} (with reachable error) and {\em true} (fixed) benchmark version. TODO: How they are prepared?
+
+\begin{center}
+  \begin{table}[h]\footnotesize
+    \caption{Evaluation on Linux Device Drivers}
+    \begin{tabular}{ | l | c | c | c | c | c | c |}
+      \hline
+       Approach       & MergeJoin   & MergeEq & MergeSep & EmptyLockset & Threading & Other tool \\ \hline
+      False verdicts & 12      & 12          & 12        & 23         & 3 & ?\\ 
+  \hspace{0.5cm} Correct false   & 12 & 12   & 12        & 12         & 2 & ? \\ 
+  \hspace{0.5cm} Incorrect false & 0 & 0   & 0        & 11         & 1 & ? \\ \hline
+      True verdicts  & 12      & 12          & 11        & 1         & 0 & ? \\ 
+  \hspace{0.5cm} Correct true   & 12 & 12    & 11        & 1         & 0 & ? \\ 
+  \hspace{0.5cm} Incorrect true & 0 & 0    & 0        & 0         & 0 & ? \\ \hline
+      Unknowns       & 8      & 8          & 9        & 8         & 29 & ? \\ \hline
+      CPU time (s)   & 10 200 & 9 960      & 11 000   & 11 000    & 23 500 & ? \\
+      Wall time (s)  & 9 060  & 9 040      & 9 650    & 9 640     & 22 200 & ? \\
+      \hline
+    \end{tabular}
+  \end{table}
+\end{center}
+
+{\em Discussion.}
+
+{\textbf EmptyLockset} -- without lockset condition you can not prove conditions on global variables under locks. It produces too much incorrect false verdicts.
+
+{\textbf MergeJoin}, {\textbf MergeEq}, {\textbf MergeSep} all having the similar results. {\textbf MergeSep} does not prove one true and a bit slower.
+
+%To see how much time/resources is spent on applying inference objects we have collected the following characteristics:
+%\begin{itemize}
+%\item {\bf inference objects} -- number of inference objects in the final reached set;
+%\item {\bf merges} -- number of times when merge for inference objects returns different state;
+%\item {\bf refinements} -- of predicate analysis;
+%\item {\bf states from objects} -- number of inference object applications in transfer;
+%\item {\bf stops} -- stop operator for inference objects returns true;
+%\item {\bf passes} -- stop operator for inference objects returns false;
+%\item {\bf total states} -- number of states in the final reached set.
+%\end{itemize}
+
+{\em See full tables of results in repository.}
+
+{\textbf Threading} work too slow for the device drivers, so all benchmarks except three are timeouts. TODO: What is the reason of incorrect false?
+
+TODO: Preliminary results of the other tools.
+YogarCBMC -- segmentation fails and incorrect results.
+SMACK -- timeouts.
+
+%----------------------------------------------------
+\subsection{Evaluation on SV-COMP Benchmarks}
+Category {\em ConcurrencySafety}.
+
+For SV-COMP we should generate a witness file, but thread-modular approach gives only a singlethreaded trace with inference objects. To find the full path to the error we need to find interleaving of the other threads.
+
+{\em Future solution. The witness checker should follow the singlethreaded trace and should do context switches at the points of inference objects. It should explore the remaining threads to find a suitable interleaving.}
+
+Right now witness checkers do not support thread identifiers in the error witnesses.
+
+\begin{center}
+  \begin{table}[h]\footnotesize
+    \caption{Evaluation on SV-COMP benchmarks}
+    \begin{tabular}{ | l | c | c | c | c | c | c |}
+      \hline
+      Approach         & MergeJoin   & MergeEq & MergeSep & EmptyLockset & Threading & Other tool \\ \hline
+      False verdicts & 988    & 988        & 988      & 989       & 769       & ?\\ 
+  \hspace{0.5cm} Correct false & 789 & 789 & 789      & 789       & 767       & ?\\ 
+  \hspace{0.5cm} Incorrect false & 199 & 199 & 199    & 200       & 2         & ? \\ \hline
+      True verdicts  & 33      & 33        & 33       & 32        & 163       & ? \\ 
+  \hspace{0.5cm} Correct true & 33 & 33    & 33       & 32        & 163       & ? \\
+  \hspace{0.5cm} Incorrect true & 0 & 0    & 0        & 0         & 0         & ? \\ \hline
+      Unknowns       & 26     & 26         & 26       & 26        & 115       & ? \\ \hline
+      CPU time (s)   & 28 400 & 38 200     & 46 900  & 39 900    & 63 000    & ? \\ 
+      Wall time (s)  & 17 300 & 24 100     & 29 100   & 23 500    & 38 600    & ? \\
+      \hline
+    \end{tabular}
+  \end{table}
+\end{center}
+
+{\em Discussion.}
+The thread-modular approach do not produce incorrect false result confirming soundness of the approach. 
+
+For the {\textbf EmptyLockset} configuration we do not see much more incorrect false results compare to the other options while on device drivers it gave more difference.
+Hence not that many benchmarks are related to protecting data with locks.
+
+{\textbf MergeJoin}, {\textbf MergeEq} and {\textbf MergeSep} have the same number of correct results. {\textbf MergeSep} is the most slow, then {\textbf MergeEq} is slower than the most fastest {\textbf MergeJoin}.
+
+Comparing Thread-Modular with Inference Objects to Classic Analysis ({\textbf Threading}). All 33 true proved by thread-modular approach were not proved by {\textbf Threading}. That is one of the contributions of the method.
+Thread-modular approach has many incorrect false.
+Most of them (157) are due to unsupported atomic constructions like compare and swap {\em \_\_VERIFIER\_atomic\_CAS}. In 23 cases we do not support happens-before ordering by thread creation (the child thread can not interfere parent before creation). The current limitations of refinement procedure (see Section~\ref{sect_impl_refinement}) do not allow to discover interpolants to the thread of inference object in 12 cases. 7 cases are sensitive for exploring interleavings.
+
+
 \section{Таблица обыкновенная} \label{sect3_1}
 
 Так размещается таблица:
