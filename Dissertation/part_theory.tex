@@ -219,14 +219,14 @@ $$\forall R\subseteq E: \conc{R} \supseteq \bigcup_{e\in R}{\conc{\{e\}}}$$
 Для $R \subseteq E \times \Pi$ обозначаем
 $\conc{R} = \conc{\bigcup_{(e,\pi)\in R}\{e\}}$.
 
-{\textbf 3.} Отношение переходов \emph{transfer} $\tatarrow: 2^{E\times \Pi} \times G \times E \times \Pi$ определяет для каждого множества частичных состояний $\hat R$ следующие возможные абстрактные состояния $e'$ с точностью $\pi$.
-Будем писать $\hat R \tat{g} (e', \pi)$, если $(\hat R, g, e, \pi) \in \tatarrow$ и $\hat R \tatarrow (e', \pi)$ если $\exists g \in G: \hat R \tat{g} (e', \pi)$.
+{\textbf 3.} Отношение переходов \emph{transfer} $\tatarrow: 2^{E\times \Pi} \times G \times E \times \Pi$ определяет для каждого множества частичных состояний $\widehat{R}$ следующие возможные абстрактные состояния $e'$ с точностью $\pi$.
+Будем писать $\widehat{R} \tat{g} (e', \pi)$, если $(\widehat{R}, g, e, \pi) \in \tatarrow$ и $\widehat{R} \tatarrow (e', \pi)$ если $\exists g \in G: \widehat{R} \tat{g} (e', \pi)$.
 
 %TODO: do we need g,t on the arrow? 
 %and $e \tatarrow (e', \pi)$ if $\exists g \in G, t \in T: e \tat{g,t} (e', \pi)$.
 
 Требование к отношению переходов в классическом CPA является слишком строгим.
-В некоторых случаях более эффективным является аппроксимировать переходы из $\conc{\hat R}$  в несколько шагов:
+В некоторых случаях более эффективным является аппроксимировать переходы из $\conc{\widehat{R}}$  в несколько шагов:
 \begin{itemize}
 \item применение переходов из частичных состояний по отдельности;
 \item применение некоторых шагов позже, например, переходов по окружению.
@@ -237,7 +237,7 @@ $\conc{R} = \conc{\bigcup_{(e,\pi)\in R}\{e\}}$.
 \label{reach_k}
 \begin{aligned}
 & \forall R \subseteq E: Reach^0(R) = R \\
-\forall k\ge 1:& Reach^{k+1}(R) = \bigcup_{\hat R \subseteq Reach^{k}(R)}{\{(e',\pi') \mid \hat R \tatarrow (e',\pi')\}} \cup Reach^{k}(R) \\
+\forall k\ge 1:& Reach^{k+1}(R) = \bigcup_{\widehat{R} \subseteq Reach^{k}(R)}{\{(e',\pi') \mid \widehat{R} \tatarrow (e',\pi')\}} \cup Reach^{k}(R) \\
 \end{aligned}
 \end{equation}
 
@@ -254,7 +254,7 @@ $\conc{R} = \conc{\bigcup_{(e,\pi)\in R}\{e\}}$.
 
 %--------------------------------
 
-{\textbf 4.} Оператор \emph{merge} $merge: E \times E \times \Pi \rightarrow E$ ослабляет второй параметр, используя информацию от первого параметра, и возвращает новое абстрактное состояние с точностью, которая передавалась, как третий параметр.
+{\textbf 4.} Оператор $merge: E \times E \times \Pi \rightarrow E$ ослабляет второй параметр, используя информацию от первого параметра, и возвращает новое абстрактное состояние с точностью, которая передавалась, как третий параметр.
 Оператор \emph{merge} должен удовлетворять следующим требованиям:
 \begin{equation}
 \label{cpa_merge_eq}
@@ -264,7 +264,7 @@ $\conc{R} = \conc{\bigcup_{(e,\pi)\in R}\{e\}}$.
 \end{aligned}
 \end{equation}
 
-{\textbf 5.} Оператор \emph{stop} $stop: E \times 2^{E \times \Pi} \times \Pi \rightarrow \mathbb{B}$ проверяет, является ли абстрактное состояние, передаваемое, как первый параметр с точностью, передаваемой как третий параметр, покрытым множеством абстрактных состояний, которые передаются вторым параметром.
+{\textbf 5.} Оператор $stop: E \times 2^{E \times \Pi} \times \Pi \rightarrow \mathbb{B}$ проверяет, является ли абстрактное состояние, передаваемое, как первый параметр с точностью, передаваемой как третий параметр, покрытым множеством абстрактных состояний, которые передаются вторым параметром.
 Оператор останова может, например, проходить по элементам из множества $R$, который передается как второй параметр и искать такой элемент, который больше ($\sqsubset$), чем проверяемый элемент.
 %, or -- if $D$ is a powerset domain\footnote{A powerset domain is an abstract domain s.t. $\tconc{e \sqcup e'}{t} = \tconc{e}{t} \cup \tconc{e'}{t}$} -- can join the elements of $R$ to check if $R$ subsumes the first parameter. 
 Оператор останова должен удовлетворять следующему требованию:
