@@ -53,25 +53,26 @@ described in~\cite{MEMICS16-Multi-Threaded} uses Classic CPA (see section~\ref{s
 \end{enumerate}
 
 %----------------------------------------------------
-\subsection{Evaluation on Linux Device Drivers}
-We have 32 benchmarks prepared from 16 known bugs found during GSoC 2017 http://linuxtesting.org/28-08-2017
-(to be added to the SV-COMP subcategory SoftwareSystems Concurrency). For each bug we have {\em false} (with reachable error) and {\em true} (fixed) benchmark version. TODO: How they are prepared?
+\subsection{Запуск на известных ошибках в драйверах Linux}
+Мы подготовили 32 тестовых программы на основе 16 известных ошибок, найденных в модулях ядра операционной системы Linux в течение GSoC 2017 http://linuxtesting.org/28-08-2017
+Для каждой ошибки доступны два варианта: {\em false} (с достижимой ошибкой) и {\em true} (исправленный вариант).
+% TODO: How they are prepared?
 
 \begin{center}
   \begin{table}[h]\footnotesize
-    \caption{Evaluation on Linux Device Drivers}
+    \caption{Сравнение на известных ошибках в драйверах Linux}
     \begin{tabular}{ | l | c | c | c | c | c | c |}
       \hline
-       Approach       & MergeJoin   & MergeEq & MergeSep & EmptyLockset & Threading & Other tool \\ \hline
-      False verdicts & 12      & 12          & 12        & 23         & 3 & ?\\ 
-  \hspace{0.5cm} Correct false   & 12 & 12   & 12        & 12         & 2 & ? \\ 
-  \hspace{0.5cm} Incorrect false & 0 & 0   & 0        & 11         & 1 & ? \\ \hline
-      True verdicts  & 12      & 12          & 11        & 1         & 0 & ? \\ 
-  \hspace{0.5cm} Correct true   & 12 & 12    & 11        & 1         & 0 & ? \\ 
-  \hspace{0.5cm} Incorrect true & 0 & 0    & 0        & 0         & 0 & ? \\ \hline
-      Unknowns       & 8      & 8          & 9        & 8         & 29 & ? \\ \hline
-      CPU time (s)   & 10 200 & 9 960      & 11 000   & 11 000    & 23 500 & ? \\
-      Wall time (s)  & 9 060  & 9 040      & 9 650    & 9 640     & 22 200 & ? \\
+       Подход       & MergeJoin   & MergeEq & MergeSep & EmptyLockset & Threading & Other tool \\ \hline
+      Вердикт "ошибка" & 12      & 12          & 12        & 23         & 3 & ?\\ 
+  \hspace{0.5cm} из них правильных   & 12 & 12   & 12        & 12         & 2 & ? \\ 
+  \hspace{0.5cm} из них неправильных & 0 & 0   & 0        & 11         & 1 & ? \\ \hline
+      Вердикт "нет ошибки"  & 12      & 12          & 11        & 1         & 0 & ? \\ 
+  \hspace{0.5cm} из них правильных   & 12 & 12    & 11        & 1         & 0 & ? \\ 
+  \hspace{0.5cm} из них неправильных & 0 & 0    & 0        & 0         & 0 & ? \\ \hline
+      Анализ не завершен корректно       & 8      & 8          & 9        & 8         & 29 & ? \\ \hline
+      Время CPU (с)   & 10 200 & 9 960      & 11 000   & 11 000    & 23 500 & ? \\
+      Время (с)  & 9 060  & 9 040      & 9 650    & 9 640     & 22 200 & ? \\
       \hline
     \end{tabular}
   \end{table}
@@ -79,9 +80,9 @@ We have 32 benchmarks prepared from 16 known bugs found during GSoC 2017 http://
 
 {\em Discussion.}
 
-{\textbf EmptyLockset} -- without lockset condition you can not prove conditions on global variables under locks. It produces too much incorrect false verdicts.
+{\textbf EmptyLockset} -- без условия на множества захваченных блокировок нельзя доказать условия на глобальные переменные при захваченных блокировках. Это приводит к слишком большому количеству некорректных вердиктов.
 
-{\textbf MergeJoin}, {\textbf MergeEq}, {\textbf MergeSep} all having the similar results. {\textbf MergeSep} does not prove one true and a bit slower.
+{\textbf MergeJoin}, {\textbf MergeEq}, {\textbf MergeSep} -- все они получают похожие результаты, хотя {\textbf MergeSep} не может доказать один из вердиктов и в целом работает немного медленнее.
 
 %To see how much time/resources is spent on applying inference objects we have collected the following characteristics:
 %\begin{itemize}
@@ -96,54 +97,111 @@ We have 32 benchmarks prepared from 16 known bugs found during GSoC 2017 http://
 
 {\em See full tables of results in repository.}
 
-{\textbf Threading} work too slow for the device drivers, so all benchmarks except three are timeouts. TODO: What is the reason of incorrect false?
+{\textbf Threading} работает слишком медленно для драйверов, поэтому на всех примерах кроме трех возникает таймаут 
+%TODO: What is the reason of incorrect false?
 
-TODO: Preliminary results of the other tools.
-YogarCBMC -- segmentation fails and incorrect results.
-SMACK -- timeouts.
+%TODO: Preliminary results of the other tools.
+Кроме того, предпринимались попытки запуска других инструментов-участников соревнования sv-comp. 
+Однако, большинство из них, так или иначе, работали некорректно. 
+Так, YogarCBMC падает с ошибкой сегментирования, а SMACK -- получает exception. Последнюю ушибку можно избежать, отключив в конфигурации инструмента один из видов анализа, но после этого возникает таймаут.
 
 %----------------------------------------------------
-\subsection{Evaluation on SV-COMP Benchmarks}
-Category {\em ConcurrencySafety}.
+\subsection{Запуски на наборе задач SV-COMP}
+Категория {\em ConcurrencySafety}.
 
-For SV-COMP we should generate a witness file, but thread-modular approach gives only a singlethreaded trace with inference objects. To find the full path to the error we need to find interleaving of the other threads.
+%Для SV-COMP мы должны подготовить witness файл, но при подходе с отдельным рассмотрением потоков взаимодействие между потоками не учитывается, из за этого возможно подготовить трассу только в одном потоке. Чтобы преобразовать две трассы в полный путь, необходимо определить чередование между потоками. 
 
-{\em Future solution. The witness checker should follow the singlethreaded trace and should do context switches at the points of inference objects. It should explore the remaining threads to find a suitable interleaving.}
+%{\em Future solution. The witness checker should follow the singlethreaded trace and should do context switches at the points of inference objects. It should explore the remaining threads to find a suitable interleaving.}
 
-Right now witness checkers do not support thread identifiers in the error witnesses.
+%Right now witness checkers do not support thread identifiers in the error witnesses.
 
 \begin{center}
   \begin{table}[h]\footnotesize
-    \caption{Evaluation on SV-COMP benchmarks}
+    \caption{Запуск на наборе задач SV-COMP}
     \begin{tabular}{ | l | c | c | c | c | c | c |}
       \hline
-      Approach         & MergeJoin   & MergeEq & MergeSep & EmptyLockset & Threading & Other tool \\ \hline
-      False verdicts & 988    & 988        & 988      & 989       & 769       & ?\\ 
-  \hspace{0.5cm} Correct false & 789 & 789 & 789      & 789       & 767       & ?\\ 
-  \hspace{0.5cm} Incorrect false & 199 & 199 & 199    & 200       & 2         & ? \\ \hline
-      True verdicts  & 33      & 33        & 33       & 32        & 163       & ? \\ 
-  \hspace{0.5cm} Correct true & 33 & 33    & 33       & 32        & 163       & ? \\
-  \hspace{0.5cm} Incorrect true & 0 & 0    & 0        & 0         & 0         & ? \\ \hline
-      Unknowns       & 26     & 26         & 26       & 26        & 115       & ? \\ \hline
-      CPU time (s)   & 28 400 & 38 200     & 46 900  & 39 900    & 63 000    & ? \\ 
-      Wall time (s)  & 17 300 & 24 100     & 29 100   & 23 500    & 38 600    & ? \\
+      Подход         & MergeJoin   & MergeEq & MergeSep & EmptyLockset & Threading & Other tool \\ \hline
+      Вердикт "ошибка" & 988    & 988        & 988      & 989       & 769       & ?\\ 
+  \hspace{0.5cm} из них корректных & 789 & 789 & 789      & 789       & 767       & ?\\ 
+  \hspace{0.5cm} из них некорректных & 199 & 199 & 199    & 200       & 2         & ? \\ \hline
+      Вердикт "нет ошибки"  & 33      & 33        & 33       & 32        & 163       & ? \\ 
+  \hspace{0.5cm} из них корректных & 33 & 33    & 33       & 32        & 163       & ? \\
+  \hspace{0.5cm} из них некорректных & 0 & 0    & 0        & 0         & 0         & ? \\ \hline
+      Анализ не завершен       & 26     & 26         & 26       & 26        & 115       & ? \\ \hline
+      Время CPU (с)   & 28 400 & 38 200     & 46 900  & 39 900    & 63 000    & ? \\ 
+      Время (с)  & 17 300 & 24 100     & 29 100   & 23 500    & 38 600    & ? \\
       \hline
     \end{tabular}
   \end{table}
 \end{center}
 
-{\em Discussion.}
-The thread-modular approach do not produce incorrect false result confirming soundness of the approach. 
+{\em Обсуждение.}
+Подход с раздельным рассмотрением потоков не выдает ложных вердиктов "нет ошибки", что подтверждает корректность подхода.
 
-For the {\textbf EmptyLockset} configuration we do not see much more incorrect false results compare to the other options while on device drivers it gave more difference.
-Hence not that many benchmarks are related to protecting data with locks.
+Для конфигурации {\textbf EmptyLockset} мы не видим значительно большего количества некорректных вердиктов "ошибка", в сравнении с  другими конфигурациями, в то время как на драйверах этот вариант показывал значительно большее отличие.
+Это объясняется тем, что не так много тестовых примеров используют примитивы синхронизации для обеспечения корректного доступа к данным.
 
-{\textbf MergeJoin}, {\textbf MergeEq} and {\textbf MergeSep} have the same number of correct results. {\textbf MergeSep} is the most slow, then {\textbf MergeEq} is slower than the most fastest {\textbf MergeJoin}.
+{\textbf MergeJoin}, {\textbf MergeEq} и {\textbf MergeSep} показывают одинаковое число корректных результатов.
+{\textbf MergeSep} является наиболее медленным, затем {\textbf MergeEq} немного быстрее, и {\textbf MergeJoin} показывает самые быстрые результаты.
 
-Comparing Thread-Modular with Inference Objects to Classic Analysis ({\textbf Threading}). All 33 true proved by thread-modular approach were not proved by {\textbf Threading}. That is one of the contributions of the method.
-Thread-modular approach has many incorrect false.
-Most of them (157) are due to unsupported atomic constructions like compare and swap {\em \_\_VERIFIER\_atomic\_CAS}. In 23 cases we do not support happens-before ordering by thread creation (the child thread can not interfere parent before creation). The current limitations of refinement procedure (see Section~\ref{sect_impl_refinement}) do not allow to discover interpolants to the thread of inference object in 12 cases. 7 cases are sensitive for exploring interleavings.
+Сравнивая анализ с раздельным рассмотрением потоков с классическим анализом, который рассматривает все возможные чередования ({\textbf Threading}).
+Все 33 вердикта "true", доказанных нашим подходом не были доказаны {\textbf Threading}.
+Это является одним из важных вкладов данного подхода.
 
+Подход с раздельным рассмотрением потоков выдает большое количество ложных предупреждений об ошибке. 
+Большинство из них (157) связаны с неподдерживаемыми атомарными конструкциями, такими как 'compare and swap' {\em \_\_VERIFIER\_atomic\_CAS}.
+В 23 случаяъ данных подход не способен определить отношение happens-before между созданием потока (дочерний поток не может работать одновременно с родительским до точки своего создания).
+Текущие ограничения процедуры уточнения не позволяют определять и расставлять интерполянты на поток, исходный для эффекта окружения.
+В 7 случаях требовалось точное рассмотрение переключений между потоками.
+
+\subsection{Запуски анализа, инвариантного к эффектам окружения}
+
+Как уже отмечалось ранее, анализ, инвариантный к эффектам окружения менее требовательный к ресурсам, хотя и менее точный.
+
+\begin{center}
+  \begin{table}[h]\footnotesize
+    \caption{Запуск на подсистеме net/wireless/}
+    \begin{tabular}{ | l | c | c | c | c | c | c |}
+      \hline
+      Подход         & CPALockator   & Без ThreadCPA & Без PredicateCPA \\ \hline
+      Вердикт "ошибка" & 71    & 107        & 310 \\ 
+%  \hspace{0.5cm} из них корректных & 789 & 789 & 789      & 789       & 767       & ?\\ 
+%  \hspace{0.5cm} из них некорректных & 199 & 199 & 199    & 200       & 2         & ? \\ \hline
+      Вердикт "нет ошибки"  & 51      & 29        & 50  \\ 
+%  \hspace{0.5cm} из них корректных & 33 & 33    & 33       & 32        & 163       & ? \\
+%  \hspace{0.5cm} из них некорректных & 0 & 0    & 0        & 0         & 0         & ? \\ \hline
+      Анализ не завершен       & 49     & 46         & 36    \\ \hline
+      Время CPU (ч)   & 6.4 & 5.4     & 2.1  \\ 
+      Время (ч)  & 5.9 & 5.1     & 1.8   \\
+      \hline
+    \end{tabular}
+  \end{table}
+\end{center}
+
+В результате разметки было получено, что около 30\% полученных предупреждений соответсвуют реальным ошибкам. 
+При этом для одного состояния гонки может быть выдано несколько предупреждений на различные переменные, работа с которыми производится похожим образом.
+Таким образом, получается, что около 1\% проверенных модулей содержат ошибки, связанные с состоянием гонки.
+При этом часть из ошибок находится в неподдерживаемых модулях, и такие ошибки, как правило, не исправляются, даже если и признаются. 
+Другая часть ошибок оказывается безобидными, то есть, не способными нанести какой-либо вред.
+Такие ошибки, хотя и признаются разработчиками, все равно не исправляются, так как их исправление, как и исправление многих ошибок, связанных с параллельным выполнением кода, требует серьезных изменений кода.
+В среднем, только половина найденных ошибок доходит до подготовки патча, исправляющего эту ошибку.
+
+Наиболее важной причиной ложных срабатываний стало несовершенство модели окружений, из-за которой было  получено  более  50\%  ложных  предупреждений.
+Например,  некоторые функции-обработчики  драйвера  при  реальном  выполнении  вызываются  под блокировками, в то время как в модели этот факт не учитывается.
+Кроме того зачастую  возникают  неявные  зависимости  между  обработчиками  разных структур,  которые  не  позволяют  им  выполняться одновременно  и  которые также  не  учитываются  в  модели  окружения.
+Следует  еще  раз  отметить, что модель окружения относится к этапу подготовки задачи, а не к методу анализу непосредственно. 
+
+Возникали  ситуации,  в  которых  структуры  одного  типа  использовались  для разного  назначения,  которое  предполагало  наличие  различных  блокировок. 
+Таким образом, упрощенная модель памяти, которую используется в методе, принесла около 10\% ложных предупреждений. 
+Еще 10\%  ложных  предупреждений  связаны  с  ситуациями,  в  которых  из разделяемого множества достается объект под блокировками, а работа с ним 
+осуществляется  без них.
+Около 10\% связаны с  неточностями анализа: это и несовершенство анализа функциональных указателей, и проблемы в анализе примитивов  синхронизации  (в т. ч. отсутствие некоторых  блокировок  в конфигурации), и неточности в анализе разделяемых данных.  
+
+Таким   образом,   представленный   метод   поиска  состояний  гонок   в
+операционных системах продемонстрировал практически значимые результаты
+с приемлемым уровнем ложных срабатываний. Являясь, по сути, легковесным
+методом, он допускает более гибкую настройку баланса между ресурсами и
+точностью анализа.
 %
 %\section{Таблица обыкновенная} \label{sect3_1}
 %

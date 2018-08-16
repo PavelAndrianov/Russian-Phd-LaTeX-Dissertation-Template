@@ -1217,7 +1217,7 @@ $\forall \overline{R} \subseteq R': \overline{R} \in W \lor (\forall e \in Reach
 \begin{algorithm}
   \Fn{$\frontier_R(w, R, e, \pi))$}{
     $w' := w$\;
-    \If {$e\in E$} {
+    \If {$e \in E$} {
         //применяем переход в потоке\;
         $w' = w' \cup \{\{(e,\pi), (\tau,\pi)\}\}$\;
         \For{each $(i, \pi_i) \in R, i \in I$}{
@@ -1228,7 +1228,7 @@ $\forall \overline{R} \subseteq R': \overline{R} \in W \lor (\forall e \in Reach
         }
     }
     \If {$e\in \IR$} {
-    	\Let $i=e$\;
+    	//Пусть $i=e$\;
         \For{each $(\hat e,\hat \pi) \in R, \hat e \in E$}{
             \If {$compatible_{TM}(\hat e, i)$}{
                 //применяем переход по окружению\;
