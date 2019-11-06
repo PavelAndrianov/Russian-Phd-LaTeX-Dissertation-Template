@@ -39,6 +39,12 @@
 
 Под отношением переходов, помеченным дугой $g$ будем понимать $\tc{g,t} \subseteq C \times G \times T \times C$, где дуга $g \in G$, а идентификатор потока $t \in T$.
 Переход  $c_1 \tc{g,t} c_2, c_1, c_2 \in C$ моделирует переход программы из состояния $c_1$ в состояние $c_2$ при выполнении потоком $t \in T$ операции на дуге $g \in G$.
+Для полноты будем считать, что существует специальный $\varepsilon$-переход из каждого состояния в себя:
+$\forall c \in C, t \in T: c \tc{\varepsilon, t} c$.
+
+Определим множество конкретных переходов $\mathcal{T}=C\times G \times T$.
+Конкретный переход $\tau \in \mathcal{T}$ -- это тройка $\tau = (c, g, t)$. 
+Будем писать $\tau_1 \tcarrow \tau_2$, если $\exists c_3 \in C: c_1 \tc{g_1, t_1} c_2 \tc {g_2, t_2} c_3$.
 
 Для всех $c=(c_{pc}, c_l, c_g, c_s), c'=(c'_{pc}, c'_l, c'_g, c'_s) \in C$, $g = (l, \cdot, l')\in G$, $t\in T$ любой переход $c \tc{g, t} c'$ должен удовлетворять следующим требованиям:
 \begin{enumerate}
@@ -176,27 +182,39 @@ assert(variable == expression);
 %Note, that acquire/release operations are special ones and operate on lock variables only.
 
 
-\section{Адаптивный статический анализ с частичными состояниями}
+\section{Адаптивный статический анализ с абстрактными переходами}
 \label{sect_cpata}
 
 \newcommand{\update}{update}
 \newcommand{\frontier}{frontier}
 
-Определим формально \emph{адаптивный статический анализ с частичными состояниями} для параллельных программ $\mathbb{D}=(D$, $\Pi$, $\tatarrow$, $merge$, $stop$, $prec$, $\update$, $\frontier$ $)$.
+В классической теории~\cite{BeyerCPA07,Beyer08}, абстрактное состояние представляет собой множество конкретных состояний программы.
+В предлагаемом расширении теории абстрактное состояние является частичным, то есть оно может не представлять ни одного состояния программы.
+Поэтому функция конкретизации, которая предоставляет соответствие между абстрактными состояниями и конкретными, в расширенной теории отличается от классической: она определяется на множестве абстрактных элементов.
+Это является следствием того, что полное конкретное состояние может быть получено только из нескольких частичных состояний, описывающих потоки по-отдельности.
+
+Частичными также являются и абстрактные переходы.
+Поэтому анализ не может гарантировать, что 
+Поэтому анализ не может гарантировать, что последующие конкретные переходы будут достижимы за один шаг оператора transfer.
+В общем случае для этого может понадобиться $k$ шагов. Для подхода с отдельным анализом потоков $k=2$: анализ выполняет обычный переход в потоке, а затем распространяет его на все остальные потоки в качестве перехода в окружении. Это требует двух итераций алгоритма.
+
+Определим формально \emph{адаптивный статический анализ с абстрактными переходами} для параллельных программ $\mathbb{D}=(D$, $\Pi$, $\tatarrow$, $merge$, $stop$, $prec$).
 Он состоит из абстрактного домена $D$, 
 множество точности $\Pi$, 
 отношения переходов $\tatarrow$,
-оператора слияния $merge$, оператор останова $stop$, функции уточненения $prec$, 
-операторов $\update$ и $\frontier$, которые определяют множества частичных состояний для следующего перехода.
+оператора слияния $merge$, оператор останова $stop$, функции уточненения $prec$.
+Несмотря на то, что сам операторы остались теми же, что и в классической версии теории, они претерпели некоторые изменения.
 Эти операторы будут подробно рассмотрены далее.
 
-{\textbf 1.} \emph{Абстрактный домен}  $D=(C, \mathcal{E},\conc{\cdot})$ определяется множеством $C$ конкретных состояний, полурешеткой $\mathcal{E}$ абстрактных состояний и функцией конкретизации $\conc{\cdot}$.
+\begin{itemize}
+
+\item \emph{Абстрактный домен}  $D=(\mathcal{T}, \mathcal{E},\conc{\cdot})$ определяется множеством $\mathcal{T}$ конкретных переходов ($\mathcal{T} \subseteq C \times G \times T$), полурешеткой $\mathcal{E}$ абстрактных переходов и функцией конкретизации $\conc{\cdot}$.
 Полурешетка 
 $\mathcal{E}=(E, \top, \bot, \sqsubseteq, \sqcup)$ состоит из (возможно, бесконечного) множества $E$ элементов абстрактного домена, верхнего элемента $\top \in E$, нижнего элемента $\bot \in E$, частичного порядка $\sqsubseteq \subseteq E \times E$ и функции $\sqcup:E \times E \rightarrow E$ (оператор объединения состояний).
 Функция $\sqcup$ возвращает наименьший элемент решетки, который больше, чем каждый из двух ее аргументов, а символы $\top$ и $\bot$ обозначают наибольший и наименьший элемент решетки $E$ соответственно. 
 
-Функция конкретизации $\conc{\cdot}: 2^E \rightarrow 2^C$ отображает каждое множество абстрактных состояний $s \subseteq E$ на множество его значений, то есть на множество конкретных состояний программы, которое оно представляет.
-Заметим, что аргументом функции конкретизации является множество абстрактных состояний, а не одно состояние.
+Функция конкретизации $\conc{\cdot}: 2^E \rightarrow 2^\mathcal{T}$ отображает каждое множество абстрактных переходов $R \subseteq E$ на множество его значений, то есть на множество конкретных состояний программы, которое оно представляет.
+Основным отличием от классической функции конкретизации – это определение на множестве абстрактных элементов.
 Это объясняется тем, что суммарное знание для множества частичных состояний может быть больше, чем знание для одного частичного состояния, то есть,  
 $$\forall R\subseteq E: \conc{R} \supseteq \bigcup_{e\in R}{\conc{\{e\}}}$$
 
@@ -212,15 +230,16 @@ $$\forall R\subseteq E: \conc{R} \supseteq \bigcup_{e\in R}{\conc{\{e\}}}$$
 \forall e, e' \in E, R \subseteq E : e \sqsubseteq e' \implies \conc{R \cup e} \subseteq \conc{R \cup e'}
 \end{equation}
 
-{\textbf 2.} Множество \emph{точности} $\Pi$ определяет уровень детализации абстрактного домена. Анализ использует элементы из $\Pi$, чтобы определять различный уровень точности для различных абстрактных состояний.
-Пара $(e, \pi)$ называется абстрактным состоянием $e$ с точностью $\pi$.
+\item Множество \emph{точности} $\Pi$ определяет уровень детализации абстрактного домена. 
+Анализ использует элементы из $\Pi$, чтобы определять различный уровень точности для различных абстрактных элементов.
+Пара $(e, \pi)$ называется абстрактным элементом $e$ с точностью $\pi$.
 Операторы на абстрактном домене параметризуются уровнем точности.
 
 Для $R \subseteq E \times \Pi$ обозначаем
 $\conc{R} = \conc{\bigcup_{(e,\pi)\in R}\{e\}}$.
 
-{\textbf 3.} Отношение переходов $\tatarrow: 2^{E\times \Pi} \times G \times E \times \Pi$ определяет для каждого множества частичных состояний $\widehat{R}$ следующие возможные абстрактные состояния $e'$ с точностью $\pi$.
-Будем писать $\widehat{R} \tat{g} (e', \pi)$, если $(\widehat{R}, g, e, \pi) \in \tatarrow$ и $\widehat{R} \tatarrow (e', \pi)$ если $\exists g \in G: \widehat{R} \tat{g} (e', \pi)$.
+\item Отношение переходов $\tatarrow: E\times \Pi \times 2^{E\times \Pi} \times E $ определяет для каждого частичного перехода $e$ с точностью $\pi$ и множества достигнутых частичных переходов $\widehat{R}$ следующие возможные абстрактные переходы $e'$.
+Будем писать $(e, \pi) \tat{\widehat{R}} e'$, если $(e, \pi, \widehat{R}, e') \in \tatarrow$.
 
 %TODO: do we need g,t on the arrow? 
 %and $e \tatarrow (e', \pi)$ if $\exists g \in G, t \in T: e \tat{g,t} (e', \pi)$.
@@ -230,14 +249,27 @@ $\conc{R} = \conc{\bigcup_{(e,\pi)\in R}\{e\}}$.
 \label{reach_k}
 \begin{aligned}
 & \forall R \subseteq E: Reach^0(R) = R \\
-\forall k\ge 1:& Reach^{k+1}(R) = \bigcup_{\widehat{R} \subseteq Reach^{k}(R)}{\{(e',\pi') \mid \widehat{R} \tatarrow (e',\pi')\}} \cup Reach^{k}(R) \\
+& \forall k\ge 1: Reach^{k+1}(R) = \bigcup_{e \in Reach^{k}(R)}{\{e' \mid e \tatarrow e'\}} \cup Reach^{k}(R) \\
 \end{aligned}
 \end{equation}
 
 Далее мы будем писать $Reach(R) = Reach^1(R)$. 
 
+Легко показать следующие утверждения, которые понадобятся в дальнейшем:
+% \begin{equation}
+% \label{cpa_reach_dist_1}
+% \forall k \ge 1, A,B \subseteq E: \\
+% Reach^k(A \cup B) =  Reach^k(A) \cup Reach^k(B)
+% \end{equation}
+%
+% \begin{equation}
+% \label{cpa_reach_dist_2}
+% \forall k \ge 1, A,B \subseteq E, A \subseteq B: \\
+% Reach^k(A) \subseteq  Reach^k(B)
+% \end{equation}
+
 Требование к отношению переходов в классическом CPA~\cite{Beyer08} является слишком строгим.
-В некоторых случаях, в частности при анализе многопоточных программ, более эффективным является аппроксимировать переходы из $\conc{\widehat{R}}$  в несколько шагов:
+В некоторых случаях, в частности, при анализе многопоточных программ, более эффективным является аппроксимировать переходы из $\conc{\widehat{R}}$  в несколько шагов:
 \begin{itemize}
 \item применение переходов из частичных состояний по отдельности;
 \item применение некоторых шагов позже, например, переходов по окружению.
@@ -248,23 +280,26 @@ $\conc{R} = \conc{\bigcup_{(e,\pi)\in R}\{e\}}$.
 \label{cpa_transfer_eq}
 \begin{aligned}
 & \exists k \ge 1: \forall R \subseteq E \times \Pi:\\
-& \conc{Reach^k(R)} \supseteq \bigcup_{c \in \conc{R}}{\{c' \mid c \tcarrow c'\}} \\
+& \conc{Reach^k(R)} \supseteq \bigcup_{\tau \in \conc{R}}{\{\tau' \mid \tau \tcarrow \tau'\}}  \\
 \end{aligned}
 \end{equation}
 
+Таким образом, условие~\ref{cpa_transfer_eq} ослабляет требования на оператор $transfer$ по сравнению с классической теорией CPA.
+Оно означает, что анализ может получить все конкретные переходы не за один шаг абстрактного перехода, а после $k$ шагов.
+Для анализа каждого потока по-отдельности мы далее увидем, что $k=2$.
+
 %--------------------------------
 
-{\textbf 4.} Оператор слияния состояний $merge: E \times E \times \Pi \rightarrow E$ ослабляет второй параметр, используя информацию от первого параметра, и возвращает новое абстрактное состояние с точностью, которая передавалась, как третий параметр.
+\item Оператор слияния состояний $merge: E \times E \times \Pi \rightarrow E$ ослабляет второй параметр, используя информацию от первого параметра, и возвращает новое абстрактное состояние с точностью, которая передавалась, как третий параметр.
 Оператор \emph{merge} должен удовлетворять следующим требованиям:
 \begin{equation}
 \label{cpa_merge_eq}
 \begin{aligned}
-&\forall e, e' \in E, \pi \in \Pi :\\
-&e' \sqsubseteq merge(e, e', \pi)
+&\forall e, e' \in E, \pi \in \Pi : &e' \sqsubseteq merge(e, e', \pi)
 \end{aligned}
 \end{equation}
 
-{\textbf 5.} Оператор останова $stop: E \times 2^{E \times \Pi} \times \Pi \rightarrow \mathbb{B}$ проверяет, является ли абстрактное состояние, передаваемое, как первый параметр с точностью, передаваемой как третий параметр, покрытым множеством абстрактных состояний, которые передаются вторым параметром.
+\item Оператор останова $stop: E \times 2^{E \times \Pi} \times \Pi \rightarrow \mathbb{B}$ проверяет, является ли абстрактный переход, передаваемый, как первый параметр с точностью, передаваемой как третий параметр, покрытым множеством абстрактных переходов, которые передаются вторым параметром.
 %Оператор останова может, например, проходить по элементам из множества $R$, который передается как второй параметр и искать такой элемент, который больше ($\sqsubset$), чем проверяемый элемент.
 %, or -- if $D$ is a powerset domain\footnote{A powerset domain is an abstract domain s.t. $\tconc{e \sqcup e'}{t} = \tconc{e}{t} \cup \tconc{e'}{t}$} -- can join the elements of $R$ to check if $R$ subsumes the first parameter. 
 Оператор останова должен удовлетворять следующему требованию:
@@ -276,142 +311,73 @@ $\conc{R} = \conc{\bigcup_{(e,\pi)\in R}\{e\}}$.
 \end{aligned}
 \end{equation}
 
-{\textbf 6.} Функция уточнения $prec:E \times \Pi \times 2^{E \times \Pi} \rightarrow E \times \Pi$ вычисляет новое абстрактное состояние и новую точность для данного абстрактного состояния и множества асбтрактных состояний.
+\item Функция настройки точности $prec:E \times \Pi \times 2^{E \times \Pi} \rightarrow E \times \Pi$ вычисляет новое абстрактное состояние и новую точность для данного абстрактного состояния и множества асбтрактных состояний.
 Эта функция может производить ослабление абстрактного состояния.
 Она должна удовлетворять следующему требованию:
 
 \begin{equation}
-\label{prec_equation}
+\label{cpa_prec_eq}
 \begin{aligned}
 & \forall e, e' \in E, \pi, \pi' \in \Pi, R \subseteq E \times \Pi:\\
 & (e', \pi') = prec(e, \pi, R) \implies e \sqsubseteq e'
 \end{aligned}
 \end{equation}
 
-%--------------------------------
+\end{itemize}
 
-{\textbf 7.} Оператор
-$\update: 2^{2^{E\times \Pi}} \times 2^{E\times \Pi} \times E \times \Pi \times E \times \Pi \rightarrow 2^{2^{E \times \Pi}}$
-заменяет старый элемент с некоторой точностью на новый элемент с новой точностью во множестве необработанных состояний (\emph{waitlist}), который представлен первым параметром ($2^{2^{E\times \Pi}}$) и возвращает новый \emph{waitlist}.
-
-Обозначим $Reach^w(W) = \{(e, \pi) \mid R_0 \tatarrow (e,\pi) \land R_0 \in W\}$.
-Заметим, что 
-\begin{equation}
-\label{reach_w_equation}
-\begin{aligned}
-& Reach^w(W_1 \cup W_2) = Reach^w(W_1) \cup Reach^w(W_2))
-\end{aligned}
-\end{equation}
-
-Оператор \emph{update} должен удовлетворять следующему требованию:
-\begin{equation}
-\label{cpa_update_transfer_eq}
-\begin{aligned}
-& \forall e, e' \in E, \pi, \pi' \in \Pi, W,W' \subseteq 2^{E\times \Pi},  R \subseteq E\times \Pi, e \sqsubseteq e':\\
-& R' = R \setminus \{e\} \cup \{e'\} \land W' = \update(W, R, e, \pi, e',\pi') \\
-& \land ( \forall \overline{R} \subseteq R: \overline{R} \in W \lor (\forall e \in Reach^w(\{\overline{R}\}) \exists e' \in R: e \sqsubseteq e') \implies  \\
-& \forall \overline{R} \subseteq R': \overline{R} \in W' \lor (\forall e \in Reach^w(\{\overline{R}\}) \exists e' \in R': e \sqsubseteq e'))
-\end{aligned}
-\end{equation}
-
-Смысл этого требования в том, чтобы выполнялся следующий инвариант: либо множество $\overline{R}$ находится во множестве $W$, либо переходы из этого множества уже рассмотрены и соответствующие состояния находятся во множестве достижимых состояний $R$.
-
-%\iffalse %The following text is banned by moderator
-%Требование~\ref{cpa_update_transfer_eq} является очень общим, хотя можно использовать более частное и понятное условие на оператор $update$.
-%
-%\begin{equation}
-%\label{cpa_update_transfer_eq_power}
-%\begin{aligned}
-%update(W, R, e, \pi, e', \pi') = \{\widehat{R} \mid \widehat{R} \in W \land (e, \pi) \notin \widehat{R}\} \cup frontier(R', e', \pi')
-%\end{aligned}
-%\end{equation}
-%
-%Покажем, что условие ~\ref{cpa_update_transfer_eq_power} влечет за собой выполнение условия~\ref{cpa_update_transfer_eq}.
-%Обозначим $\overline{W} = \{\widehat{R} \mid \widehat{R} \in W \land (e, \pi) \notin \widehat{R}\}$.
-%$W = \overline{W} \cup \{\widehat{R} \mid \widehat{R} \in W \land (e, \pi) \in \widehat{R}\}$.
-%$W' = update(W, R, e, \pi, e', \pi') = \{\widehat{R} \mid \widehat{R} \in W \land (e, \pi) \notin \widehat{R}\} \cup frontier(R', e', \pi') = \overline{W} \cup frontier(R', e', \pi')$.
-%Обозначим также $R \setminus \{e\} = \widehat{R}$. Тогда $R' = \widehat{R} \cup \{e'\}$.
-%Возьмем случайное подмножество $\overline{R} \subseteq R'$, предположим $\forall \overline{R} \subseteq R: \overline{R} \in W \lor (\forall e \in Reach^w(\{\overline{R}\}) \exists e' \in R': e \sqsubseteq e'))$ и покажем, что определение~\ref{cpa_update_transfer_eq_power} удовлетворяет инварианту~\ref{cpa_update_transfer_eq}. 
-%
-%\begin{itemize}
-%\item $e \notin \overline{R} \land e \notin Reach^w(\{\overline{R}\})$. Предположение $\overline{R}$ выполнено, так как
-%\begin{align}
-%& \overline{R} \in W \lor Reach^w(\{\overline{R}\}) \subseteq R \leftrightarrow (item) \nonumber \\
-%& \leftrightarrow \overline{R} \in \widehat{W} \lor Reach^w(\{\overline{R}\}) \subseteq R \setminus \{e\} \implies \nonumber \\
-%& \implies \overline{R} \in W' \lor Reach^w(\{\overline{R}\}) \subseteq R'
-%\end{align}
-%
-%\item $\overline{R} \subseteq \widehat{R} \land e \in Reach^w(\{\overline{R}\})$. Для этого $\overline{R}$ предположение выполнено.
-%\end{itemize}
-%\fi
-
-{\textbf 8.} Оператор
-$\frontier: 2^{E\times \Pi} \times E \times \Pi \rightarrow 2^{2^{E\times \Pi}}$ возвращает новое множество необработанных состояний для нового элемента с новой точностью.
-
-Оператор \emph{frontier} должен удовлетворять следующему требованию:
-\begin{equation}
-\label{cpa_frontier_transfer_eq}
-\begin{aligned}
-& \forall e \in E, \pi \in \Pi, \widehat{R}, R \subseteq E, \widehat{R} \subseteq (R \cup \{e\}), e\in \widehat{R} : \\ 
-&  
-\widehat{R} \subseteq frontier(R, e, \pi) \lor Reach(\widehat{R}) \subseteq (R \cup \{e\}) \\ 
-\end{aligned}
-\end{equation}
+В целом, множество точности $\Pi$, оператор останова $stop$, оператор объединения $merge$, оператор настройки точности $prec$ остаются такими же, как и в классической теории CPA.
 
 %end of CPA definition
 \section{Алгоритм с частичными состояниями}
 
-\begin{algorithm}[H]
-% General Algorithm
+Алгоритм~\ref{cpata_algorithm_ps} представляет основной алгоритм, который вычисляет множество достижимых абстрактных переходов.
+Он также не претерпел никаких изменений относительно классической теории CPA за исключением расширения оператора transfer.
+ 
+\begin{algorithm}
+% Plain Algorithm
  \KwData{
  адаптивный статический анализ с частичными состояниями $\mathbb{D}$,
- {начальное абстрактное состояние $e_0$ с точностью $\pi_0 \in \Pi$},
+ {начальный абстрактный переход $e_0$ с точностью $\pi_0 \in \Pi$},
  {множество $reached$ элементов из $E \times \Pi$},
  {множество $waitlist$ элементов из $2^{E \times \Pi}$}
  }
 \KwResult{множество достижимых состояний $reached$}
-{\color{blue}
- $waitlist := \frontier(\emptyset, \emptyset, e_0, \pi_0)$\;
-}
- $reached := \{e_0,\pi_0\} $\;
+ $waitlist := \{(e_0, \pi_0)\}$\;
+ $reached := \{(e_0, \pi_0)\}$\;
 
  \While{$waitlist \neq \emptyset$}{
-  pop $\widehat{R}$ from $waitlist$\;  
-  \For{each $e'$ in $\widehat{R} \tatarrow (e', \pi')$ }{
-   $(\widehat{e}, \widehat{e})=prec(e',\pi',reached)$\;
+  pop $(e, \pi)$ from $waitlist$\;  
+  \For{$e'$ in $(e, \pi) {\color{blue} \tat{reached}} e')$ }{
+   $(\widehat{e}, \widehat{\pi})=prec(e',\pi,reached)$\;
    \For{each $(e'', \pi'') \in reached$}{
     $e_{new} = merge(\widehat{e}, e'', \widehat{\pi})$\;
     \If{$e_{new} \neq e''$}{
-{\color{blue}
-     $waitlist := \update(waitlist, reached, e'', \pi'', e_{new}, \widehat{\pi})$\;
-}
-     $reached := reached \setminus{\{(e'', \pi'')\}} \cup \{(e_{new}, \widehat{\pi})\}$\;
+     $waitlist := waitlist \setminus \{(e'',\pi'')\} \cup \{(e_{new},\pi'')\}$\;
+     $reached := reached \setminus \{(e'',\pi'')\} \cup \{(e_{new},\pi'')\}$\;
     }
    }
    \If{$!stop(\widehat{e}, reached, \widehat{\pi})$}{
-{\color{blue}
-    $waitlist := waitlist \cup \frontier(reached, \widehat{e}, \widehat{\pi})$\;
-}
+    $waitlist := waitlist \cup \{(\widehat{e}, \widehat{\pi})\}$\;
     $reached := reached \cup \{(\widehat{e}, \widehat{\pi})\}$\;
    }
   }
  }%repeat
 
- \caption{$CPA_{PS}(\mathbb{D}, e_0, \pi_0)$}
+% Thin about the caption
+ \caption{Algorithm $CPA(\mathbb{D}, e_0, \pi_0)$}
  \label{cpata_algorithm_ps}
-\end{algorithm}
-
+\end{algorithm} 
+ 
 \begin{thrm}
 \label{thrm_soundness}
-(Soundness) Для заданного адаптивного статического анализа с частичными состояниями $\mathbb{D}$ и начального абстрактного состояния $e_0$ с точностью $\pi_0$, алгоритм $CPA_{PS}$ вычисляет множество абстрактных состояний, которое аппроксимирует сверху множество достижимых конкретных состояний:
+(Soundness) Для заданного адаптивного статического анализа с частичными состояниями $\mathbb{D}$ и начального абстрактного состояния $e_0$ с точностью $\pi_0$, алгоритм $CPA$ вычисляет множество абстрактных состояний, которое аппроксимирует сверху множество достижимых конкретных состояний:
 
 $$\conc{CPA_{PS}(\mathbb{D}, e_0, \pi_0)} \supseteq Reach_{\tcarrow}(\conc{\{e_0\}})$$
 
 \end{thrm}
 
-\begin{proof}
-
-Доказательство состоит из двух частей. Сначала доказывается, что алгоритм~\ref{cpata_algorithm_ps_without_waitlist} без использования структуры waitlist аппроксимирует сверху множество достижимых конкретных состояний. Вторым шагом показывается, что алгоритм~\ref{cpata_algorithm_ps} эквивалентен алгоритму~\ref{cpata_algorithm_ps_without_waitlist}.
+Доказательство состоит из двух частей. Сначала доказывается, что алгоритм~\ref{cpata_algorithm_ps_without_waitlist} без использов
+ания структуры waitlist аппроксимирует сверху множество достижимых конкретных состояний. Вторым шагом показывается, что алгоритм~\ref{cpata_algorithm_ps} эквивалентен алгоритму~\ref{cpata_algorithm_ps_without_waitlist}.
 
 \begin{algorithm}[H]
 % General Algorithm without waitlist
@@ -423,9 +389,9 @@ $$\conc{CPA_{PS}(\mathbb{D}, e_0, \pi_0)} \supseteq Reach_{\tcarrow}(\conc{\{e_0
 \KwResult{множество достижимых абстрактных состояний $reached$}
  $reached := \{e_0,\pi_0\} $\;
  
- \For{each $\widehat{R} \subseteq reached$ }{
-  \For{each $e'$ in $\widehat{R} \tatarrow (e', \pi')$ }{
-   $(\widehat{e}, \widehat{e})=prec(e',\pi',reached)$\;
+ \For{each $e \in reached$ }{
+  \For{each $e'$: $e \tat{reached} (e', \pi')$ }{
+   $(\widehat{e}, \widehat{\pi})=prec(e',\pi',reached)$\;
    \For{each $(e'', \pi'') \in reached$}{
     $e_{new} = merge(\widehat{e}, e'', \widehat{\pi})$\;
     \If{$e_{new} \neq e''$}{
@@ -438,147 +404,159 @@ $$\conc{CPA_{PS}(\mathbb{D}, e_0, \pi_0)} \supseteq Reach_{\tcarrow}(\conc{\{e_0
   }
  }%repeat
 
- \caption{$\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)$}
+ \caption{$\overline{CPA}(\mathbb{D}, e_0, \pi_0)$}
  \label{cpata_algorithm_ps_without_waitlist}
 \end{algorithm}
 
-\begin{enumerate}
-\item Для того чтобы доказать, что $\conc{\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)} \supseteq Reach_{\tcarrow}(\conc{\{e_0\}})$ воспользуемся следующим инвариантом:
+\begin{proof}
+Нужно доказать, что $\conc{\overline{CPA}(\mathbb{D}, e_0, \pi_0)} \supseteq Reach_{\tcarrow}(\conc{\{e_0\}})$.
+Определим рекурсивную функцию $\overline{CPA}_n(\mathbb{D}, e_0, \pi_0)$, которая будет вычислять множество достижимых состояний алгоритма на n-той итерации.
+ Обозначим ее для краткости $reached_n \equiv \overline{CPA}_n(\mathbb{D}, e_0, \pi_0)$.
 
+ \begin{equation}
+ \label{cpa_recursive_algorithm}
+ \begin{aligned}
+ & reached_0 = \{e_0\} \\
+ & s_n = \{e' \mid e \in reached_n \land e \tat{reached_n} e'\} \\
+ & s'_n = \{\widehat{e} \mid \widehat{e} = prec(e',\pi',reached_n) \land e' \in s_n\} \\
+ & \widehat{s}_n = \{\overline{e} \mid \exists e^1 \in reached_n, \widehat{e} \in s'_n \ldotp \overline{e} = merge(\widehat{e}, e^1, \pi))\} \\
+ & \widehat{s}^1_n = reached_n \setminus \widehat{s}_n \\
+ & \widehat{s}^2_n = \widehat{s}_n \setminus reached_n \\
+ & \tilde{s}_n = \{e \mid e \in s' \land !(stop(e, reached_n, \pi))\} \\
+ & reached_{n+1} = reached_n \setminus \widehat{s}^1_n \cup \widehat{s}^2_n \cup \tilde{s}_n = \widehat{s}_n \cup \tilde{s}_n\\
+ \end{aligned}
+ \end{equation}
+
+Покажем, что 
+ \begin{equation}
+ \label{algorithm_lemma_1}
+ \begin{aligned}
+ \conc{reached_{n+1} \cup \hat{R}} \supseteq \conc{Reach(reached_n) \cup \hat{R}} \end{aligned}
+ \end{equation}
+
+ \begin{align*}
+ & \conc{reach_{n+1} \cup \hat{R}} = (def.) = \conc{reached_n \setminus \widehat{s}^1_n \cup \widehat{s}^2_n \cup \tilde{s}_n \cup \hat{R}} \supseteq \\
+ & (eq.~\ref{cpa_conc_eq_2},\ref{cpa_merge_eq}) \supseteq \conc{reached_n  \cup \tilde{s}_n \cup \hat{R}}  
+  \supseteq (eq.~\ref{cpa_conc_eq_2},\ref{cpa_stop_eq})\\
+  & \supseteq \conc{reached_n  \cup s'_n \cup \hat{R}}  \supseteq (eq.~\ref{cpa_conc_eq_2},\ref{cpa_prec_eq}) \supseteq \conc{reached_n  \cup s_n \cup \hat{R}} =\\
+  &= (def.~\ref{reach_k}) = \conc{Reach(reached_n) \cup \hat{R}}
+ \end{align*}
+ 
+ Теперь докажем по индукции, что 
+ 
+ \begin{equation}
+ \label{algorithm_invariant_1}
+ \begin{aligned}
+ \forall k \in \mathbb{N}, \conc{reach_{n+k} \cup \hat{R}} \supseteq \conc{Reach^k(reached_n) \cup \hat{R}}
+ \end{aligned}
+ \end{equation}
+ 
+ При $k=0$ отношение тривиально: $\conc{reach_{n} \cup \hat{R}} \supseteq \conc{reached_n \cup \hat{R}}$.
+ Пусть теперь инвариант~\ref{algorithm_invariant_1} выполнен при некотором $k$, рассмотрим его при $k+1$:
+ \begin{align*}
+ & \conc{reach_{n+k+1} \cup \hat{R}} \supseteq (eq.~\ref{algorithm_lemma_1}) \supseteq \conc{Reach(reached_{n+k}) \cup \hat{R}} = \\
+ & = (def.) = \conc{reached_{n+k} \cup \{e' \mid e \tat{reached_{n+k}} e' \land e \in reached_{n+k}} \cup \hat{R}\} \\
+ & \supseteq (eq.~\ref{algorithm_invariant_1}) \supseteq \conc{Reach^k(reached_n) \cup \\
+ & \{e' \mid e \tat{reached_{n+k}} e' \land e \in reached_{n+k}\} \cup \hat{R}} \supseteq (eq.~\ref{cpa_new_transfer_req}) \\
+ & \supseteq \conc{Reach^k(reached_n) \cup \{e' \mid e \tat{Reach^k(reached_n)} e' \land e \in Reach^k(reached_n)\} \\ 
+ & \cup \hat{R}} = (def.~\ref{reach_k}) = \conc{Reach^{k+1}(reached_n) \cup \hat{R}}
+ \end{align*}
+
+Таким образом, мы имеем,
 \begin{equation}
-\label{cpa_algorithm_invariant}
-\begin{aligned}
-\conc{Reach^k(R)} \supseteq \bigcup_{c \in \conc{R}}{\{c' \mid c \tcarrow c'\}}
-\end{aligned}
-\end{equation}
+ \label{algorithm_invariant_2}
+ \begin{aligned}
+ \conc{reach_{n+k}} \supseteq \conc{Reach^k(reached_n)} \supseteq (eq.~\ref{cpa_transfer_eq}) \supseteq \bigcup_{\tau \in \conc{reached_n}}{\{\tau' \mid \tau \tcarrow \tau'\}}
+ \end{aligned}
+ \end{equation}
 
-Требование~\ref{cpa_transfer_eq} гарантирует, что инвариант выполняется на начальном шаге алгоритма и после применения оператора $transfer$.
-Покажем, что операции $prec$, $merge$ и $stop$ также не нарушают инвариант.
 
-\begin{enumerate}
-\item $prec$. Предположим, что $\exists \widehat{R} \subseteq R: \widehat{R} \tatarrow e$ and $$\conc{Reach^k(R \cup \{e\})} \supseteq \bigcup_{c \in \conc{R \cup \{e\}}}{\{c' \mid c \tcarrow c'\}}$$
-Применим оператор $prec$ и получим $\widehat{e} = prec(e, \pi, R)$. Нам нужно показать, что $$\conc{Reach^k(R \cup \{\widehat{e}\})} \supseteq \bigcup_{c \in \conc{R \cup \{e\}}}{\{c' \mid c \tcarrow c'\}}$$
-\begin{align}
-& \conc{Reach^k(R \cup \{\widehat{e}\})} \supseteq (req.~\ref{cpa_transfer_eq}) \supseteq \bigcup_{c \in \conc{R \cup \{\widehat{e}\}}}{\{c' \mid c \tcarrow c'\}} \supseteq \nonumber \\
-& (req.~\ref{prec_equation},~\ref{cpa_conc_eq_2}) \supseteq \bigcup_{c \in \conc{R \cup \{e\}}}{\{c' \mid c \tcarrow c'\}} \nonumber
-\end{align}
+Когда алгоритм заканчивает свое выполнение (доходит до неподвижной точки) $reached_n = reached_{n+1}$. 
+Обозначим финальное множество, как $Reached = lim_{n \rightarrow \infty}(reached_n)$.
+Нам остается доказать, что $\bigcup_{\tau \in \conc{Reached}}{\{\tau' \mid \tau \tcarrow \tau'\}} \supseteq Reach_{\tcarrow}(\conc{\{e_0\}})$.
 
-\item $merge$. Предположим $\exists \widehat{e} \subseteq R: e'' \neq e_{new} = merge(\widehat{e}, e'', \pi)$ and $$\conc{Reach^k(R \cup \{e''\})} \supseteq \bigcup_{c \in \conc{R \cup \{e''\}}}{\{c' \mid c \tcarrow c'\}}$$
-Нам нужно показать, что $$\conc{Reach^k(R \cup \{\widehat{e}\})} \supseteq \bigcup_{c \in \conc{R \cup \{e''\}}}{\{c' \mid c \tcarrow c'\}}$$
-\begin{align}
-& \conc{Reach^k(R \cup \{\widehat{e}\})} \supseteq (req.~\ref{cpa_transfer_eq}) \supseteq \bigcup_{c \in \conc{R \cup \{\widehat{e}\}}}{\{c' \mid c \tcarrow c'\}} \supseteq \nonumber \\
-& \supseteq (req.~\ref{cpa_merge_eq},~\ref{cpa_conc_eq_2}) \supseteq \bigcup_{c \in \conc{R \cup \{e''\}}}{\{c' \mid c \tcarrow c'\}} \nonumber
-\end{align}
 
-\item $stop$. Предположим $stop(\widehat{e}, R, \pi) = true$ and $$\conc{Reach^k(R \cup \{\widehat{e}\})} \supseteq \bigcup_{c \in \conc{R \cup \{\widehat{e}\}}}{\{c' \mid c \tcarrow c'\}}$$
-Нам нужно показать, что $$\conc{Reach^k(R)} \supseteq \bigcup_{c \in \conc{R \cup \{\widehat{e}\}}}{\{c' \mid c \tcarrow c'\}}$$
-\begin{align}
-& \conc{Reach^k(R \cup \{\widehat{e}\})} \supseteq (req.~\ref{cpa_transfer_eq}) \supseteq \bigcup_{c \in \conc{R \cup \{\widehat{e}\}}}{\{c' \mid c \tcarrow c'\}} \supseteq \nonumber \\
-& \supseteq (req.~\ref{cpa_stop_eq}) \supseteq \bigcup_{c \in \conc{R}}{\{c' \mid c \tcarrow c'\}} \nonumber
-\end{align}
-
-\end{enumerate}
-
-Когда алгоритм завершается, выполнено следующее:
-\begin{equation}
-\label{cpa_algorithm_final_invariant}
-\begin{aligned}
-& \forall \widehat{R} \subseteq R: \{e \mid \widehat{R} \tatarrow e\} \subseteq R \implies Reach(R) = R \implies Reach^k(R) = R \supseteq \\
-& \supseteq (req.~\ref{cpa_transfer_eq}) \supseteq \bigcup_{c \in \conc{R}}{\{c' \mid c \tcarrow c'\}}
-\end{aligned}
-\end{equation}
-
-Покажем, что $\forall \{c_i\} \in C: c_0 \in \conc{\{e_0\}} \land \forall 1 \leq k \leq N: c_{k} \tcarrow c_{k+1} \implies \forall 1 \leq k \leq N: c_k \in \conc{R}$ по индукции.
-Алгоритм~\ref{cpata_algorithm_ps_without_waitlist} не удаляет состояния, поэтому$e_0 \in R \lor e_0 \sqsubseteq e' \in R$. Базис индукции выполнен.
+Покажем, что $\forall \{\tau_i\} \in \mathcal{T}: \tau_0 \in \conc{\{e_0\}} \land \forall 1 \leq k \leq N: \tau_{k} \tcarrow \tau_{k+1} \implies \forall 1 \leq k \leq N: \tau_k \in \conc{Reached}$ по индукции.
+Алгоритм~\ref{cpata_algorithm_ps_without_waitlist} не удаляет состояния, поэтому $e_0 \in Reached \lor e_0 \sqsubseteq e' \in Reached$.
+Таким образом, $ \tau_0 \in \conc{Reached}$, то есть, базис индукции выполнен.
 Предположим, что утверждение выполнено для некоторого $n \in \mathbb{N}$:
+
 \begin{align}
-& \forall 1 \leq k \leq n: c_k \in \conc{R} \nonumber \\ 
-& (inv.~\ref{cpa_algorithm_final_invariant}) \implies \forall c \in \conc{R}: \{c' \mid c \tcarrow c'\} \subseteq \conc{R} \implies c_{k+1} \in \conc{R} \nonumber
+& \forall 1 \leq k \leq n: \tau_k \in \conc{Reached} \nonumber \\ 
+& \forall \tau \in \conc{Reached}: \{\tau' \mid \tau \tcarrow \tau'\} \subseteq (eq.~\ref{cpa_transfer_eq}) \subseteq \conc{Reach^k(Reached)} = \\
+& = \conc{Reached} \implies \tau_{k+1} \in \{\tau' \mid \tau \tcarrow \tau'\} \subseteq \conc{Reached} \nonumber
 \end{align}
 
-Так, мы показали, что $\conc{\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)} \supseteq Reach_{\tcarrow}(\conc{\{e_0\}})$
+Так, мы показали, что $\conc{\overline{CPA}(\mathbb{D}, e_0, \pi_0)} \supseteq Reach_{\tcarrow}(\conc{\{e_0\}})$.
 
-\item Теперь нам нужно показать, что $\forall e \in \overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0) \exists e' \in CPA_{PS}(\mathbb{D}, e_0, \pi_0): e \sqsubseteq e$, то есть, алгоритм использующий очередь состояний (waitlist) эквивалентен алгоритму без нее.
+
+Теперь нам нужно показать, что алгоритм использующий очередь состояний ($waitlist$) эквивалентен алгоритму без нее, то есть, что $\forall e \in \overline{CPA}(\mathbb{D}, e_0, \pi_0) \exists e' \in CPA(\mathbb{D}, e_0, \pi_0): e \sqsubseteq e'$.
 
 Заметим, что итерации алгоритмов абсолютно одинаковые, поэтому изменения полученных состояний являются эквивалентными.
-Единственным отличием является то, что $CPA_{PS}(\mathbb{D}, e_0, \pi_0)$ итерируется по очереди состояний, а $\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)$ -- по всем возможным подмножествам R.
+Единственным отличием является то, что $CPA(\mathbb{D}, e_0, \pi_0)$ итерируется по очереди состояний, а $\overline{CPA}(\mathbb{D}, e_0, \pi_0)$ -- по всем возможным подмножествам R.
 Два алгоритма могут быть синхронизированы следующим образом: они начинают с одного и того же начального множества $reached$. 
-Каждая итерация алгоритма $CPA_{PS}(\mathbb{D}, e_0, \pi_0)$ повторяется алгоритмом $\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)$. 
+Каждая итерация алгоритма $CPA(\mathbb{D}, e_0, \pi_0)$ повторяется алгоритмом $\overline{CPA}(\mathbb{D}, e_0, \pi_0)$. 
 Так как они выполняют одинаковые действия и модифицируют множество $reached$ одинаково, получаемое множество $reached$ будет совпадать у обоих алгоритмов.
-Когда $CPA_{PS}(\mathbb{D}, e_0, \pi_0)$ заканчивает выполнение, $\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)$ продолжает выполнять все оставшиеся итерации.
+Когда $CPA(\mathbb{D}, e_0, \pi_0)$ заканчивает выполнение, $\overline{CPA}(\mathbb{D}, e_0, \pi_0)$ продолжает выполнять все оставшиеся итерации.
 
-Теперь нужно показать, что рассмотренных итераций алгоритма $CPA_{PS}(\mathbb{D}, e_0, \pi_0)$ будет достаточно для построения винального множества $reached$.
-Сначала докажем следующий инвариант для всех итераций алгоритмов.
+Теперь нужно показать, что рассмотренных итераций алгоритма $CPA(\mathbb{D}, e_0, \pi_0)$ будет достаточно для построения финального множества $reached$.
+
+По аналогии с предыдущим пунктом нам потребуется рекурсивное определение функций $reached_n$ и $waitlist_n$:
+ \begin{equation}
+ \label{cpa_recursive_algorithm_2}
+ \begin{aligned}
+ & reached_0 = \{e_0\} \\
+ & waitlist_0 = \{e_0\} \\
+ & e_n = get(waitlist_n) \text{ выдает первое состояние в очереди} \\
+ & s_n = \{e'_n \mid e_n \tat{reached_n} e'_n\} \\
+ & s'_n = \{\widehat{e}_n \mid \widehat{e}_n = prec(e'_n,\pi',reached_n) \land e'_n \in s_n\} \\
+ & \widehat{s}_n = \{\overline{e_n} \mid \exists e^1_n \in reached_n, \widehat{e}_n \in s'_n \ldotp \overline{e_n} = merge(\widehat{e}_n, e^1_n, \pi))\} \\
+ & \widehat{s}^1_n = reached_n \setminus \widehat{s}_n \\
+ & \widehat{s}^2_n = \widehat{s}_n \setminus reached_n \\
+ & \tilde{s}_n = \{e_n \mid e_n \in s'_n \land !(stop(e_n, reached_n, \pi))\} \\
+ & reached_{n+1} = reached_n \setminus \widehat{s}^1_n \cup \widehat{s}^2_n \cup \tilde{s}_n = \widehat{s}_n \cup \tilde{s}_n\\
+ & waitlist_{n+1} = waitlist_n \setminus \{e_n\} \setminus \widehat{s}^1_n \cup \widehat{s}^2_n \cup \tilde{s}_n
+ \end{aligned}
+ \end{equation}
+
+Докажем следующий инвариант для всех итераций алгоритмов.
 
 \begin{equation}
 \label{cpa_algorithm_equivalance_invariant}
 \begin{aligned}
-\forall \overline{R} \subseteq R: \overline{R} \in W \lor (\forall e \in \{e \mid \overline{R} \tatarrow e\} \exists e' \in R : e \sqsubseteq e') 
+& \forall e \in reached_n: \\
+& e \in waitlist_n \lor (\forall \widehat{R} \subseteq E : \conc{\{e' \mid e \tat{reached_n} e'\} \cup reached_n \cup \widehat{R}} \subseteq \conc{reached_n \cup \widehat{R}}) 
 \end{aligned}
 \end{equation}
+
+Этот инвариант означает, что для любого перехода из $reached_n$ либо он находится в $waitlist_n$, либо все следующие переходы тоже находятся в $reached_n$, то есть в процессе анализа переходы не теряются.
 
 Докажем инвариант~\ref{cpa_algorithm_equivalance_invariant} по индукции.
-Для начального шага инвариант выполнен: $R = \{e_0\} \land W = \{\{e_0\}\} \implies R \in W$
-Нам нужно проверить этот инвариант после двух операций, которые модифицируют $waitlist$: $update$ и $frontier$.
+Для начального шага инвариант выполнен: $reached_0 = \{e_0\} \land waitlist_0 = \{e_0\} \implies e_0 \in waitlist_0$.
+Пусть теперь инвариант выполнен для некоторой итерации $k$. Рассмотрим следующую итерацию $k+1$ и возьмем случайный переход $e \in reached_{k+1}$.
+Возможны четыре варианта:
 
-\begin{itemize}
-\item $update$. Требования на $update$ как раз означают, что инвариант выполняется после применения этого оператора.
+\begin{enumerate}
+\item $e \in (reached_{k+1} \setminus reached_n) \setminus \{e_n\}$. Для этого состояния ничего не меняется, для него был выполнен инвариант на предыдущей итерации, и будет выполнен на этой.
+\item $e = e_k$. На прошлой итерации инвариант был выполнен, так как $e_k \in waitlist_k$, но $e_k \notin waitlist_{k+1}$.
+По определению $reached_{k+1} = reached_k \setminus \widehat{s}^1_k \cup \widehat{s}^2_k \cup \tilde{s}_k$ и $\conc{reached_{k+1} \cup \widehat{R}} = \conc{reached_k \setminus \widehat{s}^1_k \cup \widehat{s}^2_k \cup \tilde{s}_k \cup \widehat{R}} \supseteq (eq.~\ref{cpa_merge_eq}) \supseteq \conc{reached_k \cup \tilde{s}_k \cup \widehat{R}} \supseteq (eq.~\ref{cpa_stop_eq}) \supseteq \conc{reached_k \cup s'_k \cup \widehat{R}} \supseteq (eq.~\ref{cpa_prec_eq}) \supseteq \conc{reached_k \cup \{e' \mid e \tat{reached_k} e'\} \cup \widehat{R}}$. Откуда следует $\conc{\{e' \mid e \tat{reached_{k+1}} e'\} \cup reached_{k+1} \cup \widehat{R}} \subseteq \conc{reached_{k+1} \cup \widehat{R}})$.
+\item $e \in \widehat{s}^2_{k+1}$. По определению $waitlist_{k+1}$ это означает, что $\widehat{s}^2_{k+1} \subseteq waitlist_{k+1} \implies e \in waitlist_{k+1}$. А значит, инвариант выполнен.
+\item $e \in \tilde{s}_k$. Опять же, по определению $waitlist_{k+1}$ это означает, что $\tilde{s}_k \subseteq waitlist_{k+1} \implies e \in waitlist_{k+1}$. А значит, инвариант выполнен.
+\end{enumerate}
 
-\item $frontier$. Предположим, что инвариант~\ref{cpa_algorithm_equivalance_invariant} выполнен до итерации, возьмем случайное подмножество $\widehat{R} \in W$. 
-Обозначим
-\begin{equation}
-\label{r_new_definition}
-\begin{aligned}
-R_{new} = R \cup \{(e, \pi) \mid \widehat{R} \tatarrow (e, \pi)\} = R \cup Reach(\widehat{R})
-\end{aligned}
-\end{equation}
-
-\begin{equation}
-\label{w_new_definition}
-\begin{aligned}
-W_{new} = W \setminus \{\widehat{R}\} \cup \bigcup_{\widehat{R} \tatarrow (e, \pi)}{frontier(R, e, \pi)}
-\end{aligned}
-\end{equation}
-
-Используя~\ref{w_new_definition} и $(\widehat{R} \in W)$, получаем
-\begin{equation}
-\label{w_new_equation}
-\begin{aligned}
-& W_{new} \cup \{\widehat{R}\} = W \cup \bigcup_{\widehat{R} \tatarrow (e, \pi)}{frontier(R, e, \pi)} 
-\end{aligned}
-\end{equation}
-
-Обозначим $\widehat{W} = W \setminus \{\widehat{R}\}$. Инвариант~\ref{cpa_algorithm_equivalance_invariant} может быть переписан как
-$\forall \overline{R} \subseteq R: \overline{R} \in \widehat{W} \cup \{\widehat{R}\} \lor (\forall e \in \{e \mid \overline{R} \tatarrow e\} \exists e' \in R : e \sqsubseteq e') $
-
-Теперь нужно показать, что
-$\forall \overline{R} \subseteq R_{new}: \overline{R} \in W_{new} \lor(\forall e \in \{e \mid \overline{R} \tatarrow e\} \exists e' \in R : e \sqsubseteq e') $
-Возьмем случайное подмножество $\overline{R} \subseteq R_{new}$. Возможны три варианта:
-\begin{itemize}
-\item $\overline{R} \subseteq R \land \overline{R} \neq \widehat{R}$.
-Предполагая, что инвариант выполнен до итерации, $\overline{R}$ также удовлетворяет новому инварианту: $\overline{R} \in \widehat{W} \lor (\forall e \in \{e \mid \overline{R} \tatarrow e\} \exists e' \in R : e \sqsubseteq e') $
-
-\item $\overline{R} \subseteq R \land \overline{R} = \widehat{R}$. $\{e \mid \overline{R} \tatarrow e\}  = \{e \mid \widehat{R} \tatarrow e\} \subseteq R \cup \{e \mid \widehat{R} \tatarrow e\} \ = (def.~\ref{r_new_definition}) = R_{new}$. Отсюда следует, что $(\forall e \in \{e \mid \overline{R} \tatarrow e\} \exists e' = e \in R : e \sqsubseteq e')$ и инвариант выполнен.
-
-\item $e \in \overline{R} \implies \overline{R} = R' \cup \{e\} \land R' \subseteq R$. Используя требование~\ref{cpa_frontier_transfer_eq}, получаем, что инвариант также выполнен.
-\end{itemize}
-
-Этот инвариант выполнен на всех итерациях алгоритма $CPA_{PS}(\mathbb{D}, e_0, \pi_0)$, включая последнюю, в которой $W = \emptyset$, поэтому $\forall \overline{R} \subseteq R: \forall e \in \{e \mid \overline{R} \tatarrow e\} \exists e' \in R : e \sqsubseteq e'$.
-Теперь покажем, что все остальные операции алгоритма $\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)$ являются бесполезными.
-Пусть $\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)$ нашел подмножество $\widehat{R} \subseteq R: \widehat{R} \tatarrow e \land e \notin R$.
-Используя инвариант мы получаем, что $\exists e' \in R: e \sqsubseteq e'$. So, $\forall e \in \overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0) \exists e' \in CPA_{PS}(\mathbb{D}, e_0, \pi_0): e \sqsubseteq e'$.
+Инвариант~\ref{cpa_algorithm_equivalance_invariant} выполнен на всех итерациях алгоритма $CPA(\mathbb{D}, e_0, \pi_0)$, включая последнюю, в которой $waitlist_k = \emptyset$, $reached_k = Reached$, поэтому $\conc{\{e' \mid e \tat{Reached} e'\} \cup Reached} \subseteq \conc{Reached}$.
+Отсюда следует, что все остальные операции алгоритма $\overline{CPA}(\mathbb{D}, e_0, \pi_0)$ являются бесполезными.
+Действительно, пусть $\overline{CPA}(\mathbb{D}, e_0, \pi_0)$ нашел переход $e \in Reached: e \tat{Reached} e' \land e' \notin Reached$.
+Используя инвариант мы получаем, что $\conc{\{e'\} \cup Reached} \subseteq \conc{Reached}$. 
+То есть, этот абстрактный переход не дает новых конкретных переходов.
 Отсюда следует, что
 
-$\conc{\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)} \subseteq (req.~\ref{cpa_conc_eq_2}) \subseteq \conc{CPA_{PS}(\mathbb{D}, e_0, \pi_0)}$
+$\conc{\overline{CPA}(\mathbb{D}, e_0, \pi_0)} \subseteq (req.~\ref{cpa_conc_eq_2}) \subseteq \conc{CPA(\mathbb{D}, e_0, \pi_0)}$
 
-\end{itemize}
-
-\end{enumerate}
 Мы доказали следующее неравенство:
 
-$$Reach_{\tcarrow}(\conc{\{e_0\}}) \subseteq \conc{\overline{CPA}_{PS}(\mathbb{D}, e_0, \pi_0)} \subseteq \conc{CPA_{PS}(\mathbb{D}, e_0, \pi_0)}$$
+$$Reach_{\tcarrow}(\conc{\{e_0\}}) \subseteq \conc{\overline{CPA}(\mathbb{D}, e_0, \pi_0)} \subseteq \conc{CPA(\mathbb{D}, e_0, \pi_0)}$$
 
-\qedsymbol
 \end{proof}
 
 \section{Классический адаптивный статический анализ}

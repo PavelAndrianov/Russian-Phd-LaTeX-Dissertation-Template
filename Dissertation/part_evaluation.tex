@@ -1,6 +1,12 @@
 \chapter{Результаты экспериментов}
 \label{chapter_evaluation}
 
+Основными целями проведения экспериментов являются 
+\begin{enumerate}
+\item cравнение с ведущими инструментами в области поиска состояний гонки и верификации многопоточных программ;
+\item оценка влияния различных конфигураций анализа;
+\end{enumerate}
+
 Было реализовано две основные модификации анализа с раздельным рассмотрением потоков с эффектами окружения
 \begin{enumerate}
 \item $\mathbb{C_1}(\mathbb{L}, \mathbb{CS}, \mathbb{T}, \mathbb{S}, \mathbb{P})$ -- включает анализ потоков, ограниченный количеством создаваемых потоков;
@@ -11,9 +17,9 @@
 где
 \begin{itemize}
 \item Анализ точек программы $\mathbb{L}$~(раздел \ref{sect_location_analysis})
-\item Анализ стеков вызова $\mathbb{CS}$~(not described in the paper, remove it?)
+\item Анализ стеков вызова $\mathbb{CS}$~(служебный анализ, не описан в теории)
 \item Анализ потоков $\mathbb{T}$~(раздел \ref{sect_thread_analysis}),
-\item Анализ примитивов синхронизации $\mathbb{S}$%~(раздел \ref{sect_lock_analysis}), 
+\item Анализ примитивов синхронизации $\mathbb{S}$~(раздел \ref{sect_lock_analysis}), 
 с опцией 
 \begin{enumerate}
 \item {\em EmptyLockset=true/false}
@@ -23,7 +29,7 @@
 \end{itemize}
 \end{enumerate}
 
-\item Анализ предикатов $\mathbb{P}$~(раздел \ref{sect_predicate_analysis}).
+\item Анализ предикатов $\mathbb{P}$~(раздел~\ref{sect_predicate_analysis}).
 с опциями:
 \begin{itemize}
 \item {\em Merge=Join}. Объединение первой (условие) и второй (формула перехода) части эффекта окружения.
@@ -32,8 +38,8 @@
 \end{itemize}
 \end{itemize}
 
-TODO: add $\mathbb{C_2}$.
-Now only $\mathbb{C_1}$ is presented.
+TODO: Добавить $\mathbb{C_2}$?
+%Now only $\mathbb{C_1}$ is presented.
 
 Подходы для сравнения
 \begin{enumerate}
@@ -47,67 +53,17 @@ Now only $\mathbb{C_1}$ is presented.
 \item {\textbf MergeSep}. Не объединять эффекты ({\em Merge=Sep}). 
 \end{enumerate}
 \end{enumerate}
-\item {\textbf Threading}. ThreadingCPA
-described in~\cite{MEMICS16-Multi-Threaded} uses Classic CPA (see section~\ref{sect_classic_cpa}).
-\item Other tools YogarCBMC, SMACK, CSeq, ESBMC
+\item {\textbf Threading}. Анализ с перебором различных чередований потоков, реализованный в концепции CPA~\cite{MEMICS16-Multi-Threaded}, который использует классический вариант теории(см. раздел~\ref{sect_classic_cpa}).
+\item Другие ведущие инструменты YogarCBMC, SMACK, CSeq, ESBMC
 \end{enumerate}
 
 %----------------------------------------------------
-\subsection{Запуск на известных ошибках в драйверах Linux}
-Мы подготовили 32 тестовых программы на основе 16 известных ошибок, найденных в модулях ядра операционной системы Linux в течение GSoC 2017 http://linuxtesting.org/28-08-2017
-Для каждой ошибки доступны два варианта: {\em false} (с достижимой ошибкой) и {\em true} (исправленный вариант).
-% TODO: How they are prepared?
+\section{Запуски на наборе задач SV-COMP}
+Категория {\em ConcurrencySafety} содержит множество задач, для которых требуется доказать достижимость некоторого ошибочного состояния. 
+В основном, используются т.н. выражения \textit{assert}. Требуется доказать, что они не нарушаются. 
+Этот набор задач был подготовлен вручную, и содержит редко встречающиеся конструкции работы с многопоточными программами. В том числе, например, требуется доказать корректность lockFree-алгоритмов, таких, напримре, как алгоритмы Деккера или Петерсона.
 
-\begin{center}
-  \begin{table}[h]\footnotesize
-    \caption{Сравнение на известных ошибках в драйверах Linux}
-    \begin{tabular}{ | l | c | c | c | c | c | c |}
-      \hline
-       Подход       & MergeJoin   & MergeEq & MergeSep & EmptyLockset & Threading & Other tool \\ \hline
-      Вердикт "ошибка" & 12      & 12          & 12        & 23         & 3 & ?\\ 
-  \hspace{0.5cm} из них правильных   & 12 & 12   & 12        & 12         & 2 & ? \\ 
-  \hspace{0.5cm} из них неправильных & 0 & 0   & 0        & 11         & 1 & ? \\ \hline
-      Вердикт "нет ошибки"  & 12      & 12          & 11        & 1         & 0 & ? \\ 
-  \hspace{0.5cm} из них правильных   & 12 & 12    & 11        & 1         & 0 & ? \\ 
-  \hspace{0.5cm} из них неправильных & 0 & 0    & 0        & 0         & 0 & ? \\ \hline
-      Анализ не завершен корректно       & 8      & 8          & 9        & 8         & 29 & ? \\ \hline
-      Время CPU (с)   & 10 200 & 9 960      & 11 000   & 11 000    & 23 500 & ? \\
-      Время (с)  & 9 060  & 9 040      & 9 650    & 9 640     & 22 200 & ? \\
-      \hline
-    \end{tabular}
-  \end{table}
-\end{center}
-
-{\em Discussion.}
-
-{\textbf EmptyLockset} -- без условия на множества захваченных блокировок нельзя доказать условия на глобальные переменные при захваченных блокировках. Это приводит к слишком большому количеству некорректных вердиктов.
-
-{\textbf MergeJoin}, {\textbf MergeEq}, {\textbf MergeSep} -- все они получают похожие результаты, хотя {\textbf MergeSep} не может доказать один из вердиктов и в целом работает немного медленнее.
-
-%To see how much time/resources is spent on applying inference objects we have collected the following characteristics:
-%\begin{itemize}
-%\item {\bf inference objects} -- number of inference objects in the final reached set;
-%\item {\bf merges} -- number of times when merge for inference objects returns different state;
-%\item {\bf refinements} -- of predicate analysis;
-%\item {\bf states from objects} -- number of inference object applications in transfer;
-%\item {\bf stops} -- stop operator for inference objects returns true;
-%\item {\bf passes} -- stop operator for inference objects returns false;
-%\item {\bf total states} -- number of states in the final reached set.
-%\end{itemize}
-
-{\em See full tables of results in repository.}
-
-{\textbf Threading} работает слишком медленно для драйверов, поэтому на всех примерах кроме трех возникает таймаут 
-%TODO: What is the reason of incorrect false?
-
-%TODO: Preliminary results of the other tools.
-Кроме того, предпринимались попытки запуска других инструментов-участников соревнования sv-comp. 
-Однако, большинство из них, так или иначе, работали некорректно. 
-Так, YogarCBMC падает с ошибкой сегментирования, а SMACK -- получает exception. Последнюю ушибку можно избежать, отключив в конфигурации инструмента один из видов анализа, но после этого возникает таймаут.
-
-%----------------------------------------------------
-\subsection{Запуски на наборе задач SV-COMP}
-Категория {\em ConcurrencySafety}.
+Результаты экспериментов представлены в таблице~\ref{table-sv-comp}.
 
 %Для SV-COMP мы должны подготовить witness файл, но при подходе с отдельным рассмотрением потоков взаимодействие между потоками не учитывается, из за этого возможно подготовить трассу только в одном потоке. Чтобы преобразовать две трассы в полный путь, необходимо определить чередование между потоками. 
 
@@ -117,6 +73,7 @@ described in~\cite{MEMICS16-Multi-Threaded} uses Classic CPA (see section~\ref{s
 
 \begin{center}
   \begin{table}[h]\footnotesize
+  	\label{table-sv-comp}
     \caption{Запуск на наборе задач SV-COMP}
     \begin{tabular}{ | l | c | c | c | c | c | c |}
       \hline
@@ -135,32 +92,93 @@ described in~\cite{MEMICS16-Multi-Threaded} uses Classic CPA (see section~\ref{s
   \end{table}
 \end{center}
 
-{\em Обсуждение.}
+Общие выводы из полученных результатов являются следующими.
+
 Подход с раздельным рассмотрением потоков не выдает ложных вердиктов "нет ошибки", что подтверждает корректность подхода.
 
-Для конфигурации {\textbf EmptyLockset} мы не видим значительно большего количества некорректных вердиктов "ошибка", в сравнении с  другими конфигурациями, в то время как на драйверах этот вариант показывал значительно большее отличие.
+Для конфигурации {\textbf EmptyLockset} мы не видим значительно большего количества некорректных вердиктов "ошибка", в сравнении с  другими конфигурациями.
 Это объясняется тем, что не так много тестовых примеров используют примитивы синхронизации для обеспечения корректного доступа к данным.
 
 {\textbf MergeJoin}, {\textbf MergeEq} и {\textbf MergeSep} показывают одинаковое число корректных результатов.
 {\textbf MergeSep} является наиболее медленным, затем {\textbf MergeEq} немного быстрее, и {\textbf MergeJoin} показывает самые быстрые результаты.
 
 Сравнивая анализ с раздельным рассмотрением потоков с классическим анализом, который рассматривает все возможные чередования ({\textbf Threading}).
-Все 33 вердикта "true", доказанных нашим подходом не были доказаны {\textbf Threading}.
-Это является одним из важных вкладов данного подхода.
+Все 33 вердикта "true", доказанных нашим подходом не были доказаны подходом {\textbf Threading}.
+Это является одним из важных вкладов данного подхода. 
 
 Подход с раздельным рассмотрением потоков выдает большое количество ложных предупреждений об ошибке. 
 Большинство из них (157) связаны с неподдерживаемыми атомарными конструкциями, такими как 'compare and swap' {\em \_\_VERIFIER\_atomic\_CAS}.
-В 23 случаяъ данных подход не способен определить отношение happens-before между созданием потока (дочерний поток не может работать одновременно с родительским до точки своего создания).
+В 23 случаях данный подход не способен определить отношение happens-before между созданием потока (дочерний поток не может работать одновременно с родительским до точки своего создания).
 Текущие ограничения процедуры уточнения не позволяют определять и расставлять интерполянты на поток, исходный для эффекта окружения.
 В 7 случаях требовалось точное рассмотрение переключений между потоками.
 
-\subsection{Запуски анализа, инвариантного к эффектам окружения}
+%----------------------------------------------------
+\section{Запуск на известных ошибках в драйверах Linux}
+Мы подготовили 32 тестовых программы на основе 16 известных ошибок, найденных в модулях ядра операционной системы Linux\footnote{в течение GSoC 2017 http://linuxtesting.org/28-08-2017}
+Для каждой ошибки доступны два варианта: {\em false} (с достижимой ошибкой) и {\em true} (исправленный вариант).
 
-Как уже отмечалось ранее, анализ, инвариантный к эффектам окружения менее требовательный к ресурсам, хотя и менее точный.
+Задания были подготовлены с помощью системы Klever. В частности, при подготовки заданий были заменены примитивы синхронизации ядра на конструкции библиотеки posix (mutex\_lock и spin\_lock были заменены на pthread\_mutex\_lock), а также добавлена модель окружения драйвера.
+
+Результаты приведены в таблице~\ref{table-linux}.
+
+\begin{center}
+  \begin{table}[h]\footnotesize
+    \label{table-linux}
+    \caption{Сравнение на известных ошибках в драйверах Linux}
+    \begin{tabular}{ | l | c | c | c | c | c | c |}
+      \hline
+       Подход       & MergeJoin   & MergeEq & MergeSep & EmptyLockset & Threading \\ \hline
+      Вердикт "ошибка" & 12      & 12          & 12        & 23         & 3 \\ 
+  \hspace{0.5cm} из них правильных   & 12 & 12   & 12        & 12         & 2  \\ 
+  \hspace{0.5cm} из них неправильных & 0 & 0   & 0        & 11         & 1 \\ \hline
+      Вердикт "нет ошибки"  & 12      & 12          & 11        & 1         & 0  \\ 
+  \hspace{0.5cm} из них правильных   & 12 & 12    & 11        & 1         & 0  \\ 
+  \hspace{0.5cm} из них неправильных & 0 & 0    & 0        & 0         & 0 \\ \hline
+      Анализ не завершен корректно       & 8      & 8          & 9        & 8         & 29 \\ \hline
+      Время CPU (с)   & 10 200 & 9 960      & 11 000   & 11 000    & 23 500  \\
+      Время (с)  & 9 060  & 9 040      & 9 650    & 9 640     & 22 200  \\
+      \hline
+    \end{tabular}
+  \end{table}
+\end{center}
+
+{\textbf EmptyLockset} -- без условия на множества захваченных блокировок нельзя доказать условия на глобальные переменные при захваченных блокировках. Это приводит к слишком большому количеству некорректных вердиктов.
+На множестве задач sv-comp различие было меньше заметно из-за того, что в тех примерах не так часто использовались примитивы синхронизации на основе блокировок, в том время как на драйверах такая синхронизация активно применяется.
+
+{\textbf MergeJoin}, {\textbf MergeEq}, {\textbf MergeSep} -- все они получают похожие результаты, хотя {\textbf MergeSep} не может доказать один из вердиктов и в целом работает немного медленнее.
+
+%To see how much time/resources is spent on applying inference objects we have collected the following characteristics:
+%\begin{itemize}
+%\item {\bf inference objects} -- number of inference objects in the final reached set;
+%\item {\bf merges} -- number of times when merge for inference objects returns different state;
+%\item {\bf refinements} -- of predicate analysis;
+%\item {\bf states from objects} -- number of inference object applications in transfer;
+%\item {\bf stops} -- stop operator for inference objects returns true;
+%\item {\bf passes} -- stop operator for inference objects returns false;
+%\item {\bf total states} -- number of states in the final reached set.
+%\end{itemize}
+
+%{\em See full tables of results in repository.}
+
+{\textbf Threading} работает слишком медленно для драйверов, поэтому на всех примерах кроме трех возникает таймаут.
+%TODO: What is the reason of incorrect false?
+
+%TODO: Preliminary results of the other tools.
+Кроме того, предпринимались попытки запуска других инструментов-участников соревнования sv-comp. 
+Однако, большинство из них, так или иначе, работали некорректно. 
+Так, YogarCBMC падает с ошибкой сегментирования, а SMACK -- получает exception. Последнюю ушибку можно избежать, отключив в конфигурации инструмента один из видов анализа, но после этого возникает таймаут.
+
+
+\section{Запуски анализа, инвариантного к эффектам окружения}
+
+Как уже отмечалось ранее, анализ, инвариантный к эффектам окружения, менее требовательный к ресурсам, хотя и менее точный.
+
+Был проведен запуск на множестве модулей операционной системе Linux. Его результаты приведены в таблице~\ref{table-linux-full}.
 
 \begin{center}
   \begin{table}[h]\footnotesize
     \caption{Запуск на подсистеме net/wireless/}
+    \label{table-linux-full}
     \begin{tabular}{ | l | c | c | c | c | c | c |}
       \hline
       Подход         & CPALockator   & Без ThreadCPA & Без PredicateCPA \\ \hline
@@ -197,11 +215,9 @@ described in~\cite{MEMICS16-Multi-Threaded} uses Classic CPA (see section~\ref{s
 осуществляется  без них.
 Около 10\% связаны с  неточностями анализа: это и несовершенство анализа функциональных указателей, и проблемы в анализе примитивов  синхронизации  (в т. ч. отсутствие некоторых  блокировок  в конфигурации), и неточности в анализе разделяемых данных.  
 
-Таким   образом,   представленный   метод   поиска  состояний  гонок   в
-операционных системах продемонстрировал практически значимые результаты
-с приемлемым уровнем ложных срабатываний. Являясь, по сути, легковесным
-методом, он допускает более гибкую настройку баланса между ресурсами и
-точностью анализа.
+Таким   образом,   представленный   метод   поиска  состояний  гонок в операционных системах продемонстрировал практически значимые результаты
+с приемлемым уровнем ложных срабатываний.
+Являясь, по сути, легковесным методом, он допускает более гибкую настройку баланса между ресурсами и точностью анализа.
 %
 %\section{Таблица обыкновенная} \label{sect3_1}
 %
