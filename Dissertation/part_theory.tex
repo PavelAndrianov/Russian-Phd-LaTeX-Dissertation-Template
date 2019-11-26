@@ -709,50 +709,9 @@ compose_{I}(e, e'|_p), &\mbox{ если } compatible_I(e, e'|_p) \\
 
 Таким образом, оператор $apply$ означает, что переходы могут быть объединены только если они совместны. Результатом применения оператора является новый переход, который будем называть переходом в окружении, так как он представляет собой эффект окружения.
 
-Оператор $apply$ связан с оператором $transfer_I$ следующим условием:
-
-\begin{equation}
-\begin{aligned}
-\label{cpa_transfer_composite_req}
-& \forall \tau, \tau' \in \mathcal{T}, R \subseteq E: \tau \tc{R} \tau', \forall e_0, e_1, \dots, e_n \in E:  \\
-& \left(
-\begin{array}{ll}
-& \exists t_0, t_1, \dots, t_n \in T, t_i \neq t_j, t_0 = t \\
-& \tau \in \epp_I
-\left(
-\begin{pmatrix}
-e_0 \\
-t_0 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix} ,
-\dots ,
-\begin{pmatrix}
-e_n \\
-t_n 
-\end{pmatrix}
-\right\}
-\right)
-\end{array}
-\right) \Rightarrow \\
-& \left[ \begin{array}{ll}
-\lor g & \neq thread\_create \land \\
-& \exists e'_0, e'_1, \dots, e'_n \in E, \forall 1 \leq i \leq n: e_i \tatarrow e'_i: \\
-& \exists 1 \le k \le n: t_k = t' \land \\
-& \tau' \in \epp_I((e_k', t_k), \{(\tilde{e}_i, t_i) \mid \tilde{e}_i = apply(e_i', e'_k) \land i \neq k)\}) \\
-\lor g & = thread\_create \land \\
-& \exists e'_0, e'_1, \dots, e'_{n+1} \in E, \forall 1 \leq i \leq n: e_i \tatarrow e'_i \land e_0 \tatarrow e'_{n+1}: \\
-& \exists 1 \le k \le n + 1: t_k = t' \land \\
-& \tau' \in \epp_I((e_k', t_k), \{(\tilde{e}_i, t_i) \mid \tilde{e}_i = apply(e_i', e'_k) \land i \neq k)\}) 
-\end{array} 
-\right.
-\end{aligned}
-\end{equation}
-
-Требование~\ref{cpa_transfer_eq} является более строгим и влечет за собой выполнение~\ref{cpa_transfer_eq}.
+Оператор $apply$ связан с оператором $transfer_I$, поэтому отдельного условия на него нет.
+Тем не менее, в дальнейшем будет описано явное условие~\ref{cpa_transfer_tm_req}, связывающее операторы $apply$ и $transfer_I$.
+%Требование~\ref{cpa_transfer_tm_req} является более строгим и влечет за собой выполнение~\ref{cpa_transfer_eq}.
 Таким образом, CPA удовлетворяют общим условиям.
 
 
@@ -958,7 +917,7 @@ t_k
 \begin{equation}
 \begin{aligned}
 \label{cpa_transfer_inner_req}
-& \forall \tau, \tau' \in \mathcal{T}, R \subseteq E: \tau \tc{R} \tau', \forall e_0, e_1, \dots, e_n \in E:  \\
+& \forall \tau, \tau' \in \mathcal{T}, R \subseteq E: \tau \tcarrow \tau', \forall e_0, e_1, \dots, e_n \in R: e_i = (s_i, q_i) \\
 & \left(
 \begin{array}{ll}
 & \exists t_0, t_1, \dots, t_n \in T, t_i \neq t_j, t_0 = t \\
@@ -983,12 +942,12 @@ t_n
 \end{array}
 \right) \Rightarrow \\
 & \left[ \begin{array}{ll}
-\lor g & \neq thread\_create \land \\
-& \exists e'_0, e'_1, \dots, e'_n \in E, \forall 1 \leq i \leq n: e_i \tatarrow e'_i: \\
+\lor q_0 & \neq thread\_create \land \\
+& \exists e'_0, e'_1, \dots, e'_n \in E, \forall 1 \leq i \leq n: e_i \tat{R} e'_i: \\
 & \exists 1 \le k \le n: t_k = t' \land \\
 & \tau' \in \epp_I((e_k', t_k), \{(\tilde{e}_i, t_i) \mid \tilde{e}_i = apply(e_i', e'_k) \land i \neq k)\}) \\
-\lor g & = thread\_create \land \\
-& \exists e'_0, e'_1, \dots, e'_{n+1} \in E, \forall 1 \leq i \leq n: e_i \tatarrow e'_i \land e_0 \tatarrow e'_{n+1}: \\
+\lor q_0 & = thread\_create \land \\
+& \exists e'_0, e'_1, \dots, e'_{n+1} \in E, \forall 1 \leq i \leq n: e_i \tat{R} e'_i \land e_0 \tat{R} e'_{n+1}: \\
 & \exists 1 \le k \le n + 1: t_k = t' \land \\
 & \tau' \in \epp_I((e_k', t_k), \{(\tilde{e}_i, t_i) \mid \tilde{e}_i = apply(e_i', e'_k) \land i \neq k)\}) 
 \end{array} 
@@ -1232,7 +1191,7 @@ t_n
 Как уже было упомянуто, вспомогательный оператор $check_C$ в общем случае не может быть разбит на две части, однако, часто он может быть представлен через оператор проекции следующим образом: 
 
 \begin{equation}
-\label{check_c_def}
+\label{default_check_c_def}
 \begin{aligned}
 & \forall e_1, \dots, e_n \in E_I, e_i=(s_i,q_i): \\
 & check_C(e_0, \{e_1, \dots, e_n\}) = \\
@@ -1245,7 +1204,7 @@ t_n
 
 Если переход разбивается на две части, то оператор $compose_I$ становится тривиальным:
 \begin{equation}
-\label{compose_def}
+\label{default_compose_def}
 \begin{aligned}
 \forall e, e' \in E_I, e = (s, q), e' = (s', q'): compose_I(e, e') = \tilde{e} = (s, q')
 \end{aligned}
@@ -1254,7 +1213,7 @@ t_n
 Оператор $compatible_I$ проверяет возможность параллельного выполнения различных переходов из частичных состояний, поэтому обычно имеет место такое выражение:
 
 \begin{equation}
-\label{compatible_def}
+\label{default_compatible_def}
 \begin{aligned}
 \forall e, e' \in E_I, e = (s, q), e' = (s', q'): compatible_I(e, e') = check^S_C(s, {s'})
 \end{aligned}
@@ -1435,609 +1394,695 @@ $compatible_Q(\tau, \tau') = (gl=gl' \land s=s')$
 Таким образом, вычисляется абстракция сразу для нескольких типов анализа, что позволяет значительно увеличить точность.
 
 Пусть есть несколько различных видов анализа с раздельным рассмотрением потоков: $\Delta_1, \dots, \Delta_n$. 
-Композиция различных видов анализа может быть представлена, как отдельный анализ $\mathscr{C}=(D_{\mathscr{C}},$ $\Pi_{\mathscr{C}}, \tatarrow_{\mathscr{C}},$ $merge^E_{\mathscr{C}}, stop^E_{\mathscr{C}},$ $merge^I_{\mathscr{C}}, stop^I_{\mathscr{C}},$ $prec^E_{\mathscr{C}},prec^I_{\mathscr{C}},$ $compatible_{\mathscr{C}}$).
+Композиция различных видов анализа может быть представлена, как отдельный анализ $\mathscr{C}=(D_{\mathscr{C}},$ $\Pi_{\mathscr{C}}, \tatarrow_{\mathscr{C}},$ $merge_{\mathscr{C}}, stop_{\mathscr{C}},$ $prec_{\mathscr{C}},$ $\cdot|_p$, $compose_{\mathscr{C}}$, $compatible_{\mathscr{C}}$).
 Каждый $\Delta_i$ реализует отдельный вид анализа. 
-$\Delta_i=(D_{\Delta_i},$ $\Pi_{\Delta_i}, \tatarrow_{\Delta_i},$ $merge^E_{\Delta_i}, stop^E_{\Delta_i},$ $merge^I_{\Delta_i}, stop^I_{\Delta_i},$ $prec^E_{\Delta_i},prec^I_{\Delta_i},$ $compatible_{\Delta_i}$)
+$\Delta_i=(D_{\Delta_i},$ $\Pi_{\Delta_i}, \tatarrow_{\Delta_i},$ $merge^E_{\Delta_i}, stop^E_{\Delta_i},$ $prec^E_{\Delta_i},$ $\cdot|_{\Delta_i}$, $compose_{\Delta_i}$, $compatible_{\Delta_i}$)
 
 \begin{itemize}
 
 \item  $D_{\mathscr{C}} = D_{\Delta_1} \times \dots \times D_{\Delta_n}$
 
-$compatible_{\mathscr{C}}(e_1,\dots, e_m) = 
-compatible_1(e_1^1,\dots, e_m^1) \land \dots \land compatible_n(e_1^n,\dots, e_m^n)$
+Это означает, что $\mathcal{T} = C \times G \times T$, $\mathcal{E}_{\mathscr{C}} = \mathcal{E}_{\Delta_1} \times \dots \times \mathcal{E}_{\Delta_n}$.
+%$compatible_{\mathscr{C}}(e_1,\dots, e_m) = 
+%compatible_1(e_1^1,\dots, e_m^1) \land \dots \land compatible_n(e_1^n,\dots, e_m^n)$
 
 \begin{equation}
 \label{composite_epp_def}
 \begin{aligned}
-\epp_{\mathscr{C}}
+& \epp_{\mathscr{C}}
+\left(
 \begin{pmatrix}
+e_0 \\
+t_0 
+\end{pmatrix},
+\left\{
 \begin{pmatrix}
-e_1' \\
+e_1 \\
 t_1 
-\end{pmatrix}& ,
-\dots& ,
+\end{pmatrix},
+\dots ,
 \begin{pmatrix}
-e_m' \\
+e_n \\
+t_n 
+\end{pmatrix}
+\right\}
+\right) = \\
+& \hspace{1cm} \epp_{\Delta_1}
+\left(
+\begin{pmatrix}
+e^1_0 \\
+t_0 
+\end{pmatrix},
+\left\{
+\begin{pmatrix}
+e^1_1 \\
+t_1 
+\end{pmatrix},
+\dots ,
+\begin{pmatrix}
+e^1_m \\
 t_m 
 \end{pmatrix}
-\end{pmatrix} = 
-\epp_{\Delta_1}
-\begin{pmatrix}
-\begin{pmatrix}
-\widehat{e^1_1} \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-\widehat{e^1_m} \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} \cap \dots \\
- \dots \cap 
+\right\}
+\right) \cap \dots \\
+& \hspace{1cm} \dots \cap 
 \epp_{\Delta_n}
+\left(
 \begin{pmatrix}
+e^n_0 \\
+t_0 
+\end{pmatrix},
+\left\{
 \begin{pmatrix}
-\widehat{e^n_1} \\
+e^n_1 \\
 t_1 
-\end{pmatrix}& ,
-\dots& ,
+\end{pmatrix},
+\dots ,
 \begin{pmatrix}
-\widehat{e^n_m} \\
+e^n_m \\
 t_m 
 \end{pmatrix}
-\end{pmatrix}  
+\right\}
+\right)  
 \end{aligned}
 \end{equation}
+
+Из выполнимости условий~\ref{cpa_tm_epp_req_1},~\ref{cpa_tm_epp_req_2} для вложенных $\Delta_i$ следует выполнимость условий для $\mathscr{C}$, так как пересечение более широких множеств не может быть меньше, чем пересечение исходных множеств.
 
 \item  $\Pi_{\mathscr{C}} = \Pi_{\Delta_1} \times \dots \times \Pi_{\Delta_n}$
 
 \item 
 Внутренние элементы $\Delta$ работают с графом потока управления, с двумя дополнительными операциями:~\footnote{Заметим, что в реализации \cpachecker уже присутствуют две дуги в ГПУ для каждого вызова функции: function summary и function entry. Поэтому вызов функции $thread\_create$ не требует изменений в ГПУ с точки зрения реализации.}
-\begin{itemize}
+\begin{enumerate}
 \item $tc_{parent}$ представляет действие $thread\_create$ в родительском потоке, а
 \item $tc_{child}$ представляет действие $thread\_create$ в дочернем потоке.
-\end{itemize}
+\end{enumerate}
 
 Для отношения переходов в композиции
-\begin{equation}
-\label{composite_transfer_eq}
-\begin{aligned}
-e \tat{i,g}_{\mathscr{C}} (e',\pi') \mbox{ with } g=(l,op,l' )\mbox{, where } e = (e_1, \dots e_n), e' = (e_1', \dots e_n')
-\end{aligned}
-\end{equation} 
+$e \tat{R}_{\mathscr{C}} (e',\pi')$, где $e = (e_1, \dots, e_n), e_i = (s_i, q_i), q_i \in G, q_i=(l,op,l')$.
 
 \begin{itemize}
 \item если $op=thread\_create(l_\nu)$, то рассматриваются два перехода в родительском и в дочернем потоке
 \begin{enumerate}
-\item $e_j \tat{i,(l,tc_{parent}(l_\nu),l')}_{\Delta_j} (e_j',\pi')$,
-\item $e_j \tat{i,(l,tc_{child}(l_\nu),l')}_{\Delta_j} (e_j',\pi')$.
+\item $(s_j, (l, tc_{parent}, l')) \tat{R}_{\Delta_j} (e_j',\pi')$,
+\item $(s_j, (l, tc_{child}, l')) \tat{R}_{\Delta_j} (e_j',\pi')$.
 \end{enumerate}
-\item иначе, $e_j \tat{i,g}_{\Delta_j} (e_j',\pi')$.
+\item иначе, $e_j \tat{R}_{\Delta_j} (e_j',\pi')$.
 \end{itemize}
 
-%For composition if we have a transfer 
-%$e \tat{\tau,g} (e',\pi')$. then 
-%we should always have a transfer to an inference object $i' \ne \bot^I$:
-%$e \tat{\tau,g} (i',\pi')$.
+Комбинация полученных $e_j$ в один переход CompositeCPA напрямую $e' = (e_1', \dots, e_n')$ является корректным, однако недостаточно точным для использования на практике. 
+Один из внутренних CPA может получить более точную абстракцию, но за счет декартова произведения с другими анализами, он потеряет эту информацию. 
+В частности, это важно для определения следующей дуги. Один из внутренних CPA может определить, что следующий переход возможен только по одной-единственной дуге, а другой внутренний CPA, не имея этой информации, очертит более широкое реузльтирующее множество.
+В это ситуации было бы логичнее рассмотреть только одну дугу даже второму анализу.
 
-Так как композитный анализ разбивает операцию $thread\_create$ на две дуги, требование~\ref{transfer_tm_ir_stronger} трансформируется в
-
-\begin{equation}
-\label{transfer_tm_ir_stronger_for_inner_1}
-\begin{aligned}
-& \forall c, c' \in C, g \in G, t \in T, c \tc{g,t} c' \\
-& \exists t_1, \dots, t_m \in T: \forall p \neq q: t_p \neq t_q \\
-& \exists k : 1 \le k \le m \land t_k = t \\
-& c \in \epp
-\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} \implies \\
-& \cdot g \neq thread\_create\\
-& \exists e_1', \dots, e_m' \in E:\\
-& c' \in \epp
-\begin{pmatrix}
-\begin{pmatrix}
-e_1' \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_m' \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} \\
-& \mbox{ где } e_1', \dots, e_m' \mbox{ такие, что } \\
-&\exists i_1, \dots, i_{k-1}, i_{k+1}, \dots, i_m: \\
-&
-\begin{cases}
-\forall q \neq k: e_q \tat{i_q} \widehat{e_q} \land i_q \in \{i \mid e_k \tat{\tau} i\} \\
-e_k \tat{\tau} e_k' 
-\end{cases} \\
-\end{aligned}
-\end{equation}
+Для этого определяется оператор усиления: $\downarrow: E_{\Delta_1} \times \dots \times E_{\Delta_n} \rightarrow E_{\mathscr{C}}$.
+Как видно из определения, этот оператор зависит от конкретных видов анализа (CPA).
+Опишем общий вид этого оператора для усиления информации о дугах.
 
 \begin{equation}
-\label{transfer_tm_ir_stronger_for_inner_2}
+\label{simple_strengthen_def}
 \begin{aligned}
-& \cdot g = thread\_create:\\
-& \exists e_1', \dots, e_{m+1}' \in E:\\
-& c' \in \epp
-\begin{pmatrix}
-\begin{pmatrix}
-e_1' \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_{m+1}' \\
-t_{m+1} 
-\end{pmatrix}
-\end{pmatrix} \\
-& \mbox{ где } e_1' \dots e_{m+1}' \mbox{ такие, что } \\
-&\exists i_1, \dots, i_{k-1}, i_{k+1}, \dots, i_m: \\
-&
-\begin{cases}
-\forall q \neq k: e_q \tat{i_q} e_q' \land i_q \in \{i \mid e_k \tat{\tau} i\} \\
-e_k \tat{\tau, tc_{parent}} e_k' \\
-e_k \tat{\tau, tc_{child}} e_{m+1}
-\end{cases}\\
-\end{aligned}
-\end{equation}
-
-\begin{equation}
-\label{transfer_tm_ir_stronger_for_inner_3}
-\begin{aligned}
-& \cdot g = thread\_join(var,num):\\
-& \exists r: t_r \notin dom(c) \land c_t(var, num) = t_r \\
-& \exists e_1', \dots,e_{r-1}', e_{r+1}', e_m' \in E:\\
-& c' \in \epp
-\begin{pmatrix}
-\begin{pmatrix}
-e_1' \\
-t_1 
-\end{pmatrix}&,
-\dots& ,
-\begin{pmatrix}
-e_{r-1}' \\
-t_{r-1} 
-\end{pmatrix},
-\begin{pmatrix}
-e_{r+1}' \\
-t_{r+1} 
-\end{pmatrix} ,
-\dots& ,
-\begin{pmatrix}
-e_m' \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} \\
-& \mbox{ где } e_1',\dots,e_{r-1}', e_{r+1}', \dots e_m' \mbox{ такие, что } \\
-&\exists i_1, \dots, i_{k-1}, i_{k+1}, \dots, i_m: \\
-&
-\begin{cases}
-\forall q \neq k \land q \neq r: e_q \tat{i_q} e_q' \land i_q \in \{i \mid e_k \tat{\tau} i\} \\
-e_k \tat{\tau, tc_{parent}} e_k' \\
-e_k \tat{\tau, tc_{child}} e_{m+1}
+& \forall e \in E_{\mathscr{C}}, e = (e_1, \dots, e_n), \forall 1 \le i \le n: e_i = (s_i, q_i) \\
+& \downarrow(e_1, \dots, e_n) = \begin{cases}
+& ((s_1, g), \dots, (s_n, g)) \mbox{, если } \exists g: ||q_1|| \cap \dots \cap ||q_n|| = \{g\} \\
+& \bot \mbox{, если }: ||q_1|| \cap \dots \cap ||q_n|| = \emptyset \\
+& (e_1, \dots, e_n) \mbox{, иначе }
 \end{cases}
 \end{aligned}
 \end{equation}
 
-Теперь нужно показать, что требование~\ref{transfer_tm_ir_stronger} выполнено для $\mathscr{C}$, если требования~\ref{transfer_tm_ir_stronger_for_inner_1}~\ref{transfer_tm_ir_stronger_for_inner_2}~\ref{transfer_tm_ir_stronger_for_inner_3} выполнены для всех его внутренних элементов. 
-Рассмотрим случайное конкретное состояние
-$$c \in  \epp_{\mathscr{C}}
+Такое определение является самым примитивным оператором $\downarrow$, так как оно не учитывает возможности усиления ни абстрактных состояний, ни абстрактных дуг.
+Такой оператор передает информацию другим операторам только о том, что существует единственная конкретная дуга, соответствующая абстрактным дугам всех внутренних CPA.
+Тем не менее, возможны другие, более интеллектуальные, реализации этого оператора.
+
+В дальнейшем нам понадобится оператор замены: 
+\begin{align*}
+\forall e \in E, e = (s, q): \cancelto{g}{e} = \begin{cases}
+& (s, g) \mbox{, если } g \in G \\
+& \bot_I \mbox{, если } g = \bot^T_I \in \mathcal{G} \\
+& e\mbox{, иначе}
+\end{cases}
+\end{align*}
+
+Таким образом, полученные выше $e_j'$ переходами внутренних CPA комбинируются в один переход CompositeCPA с помощью оператора $\downarrow$:
+$e' = \downarrow(e'_1, \dots, e'_n)$.
+Для краткости далее будем обозначать $\downarrow(e'_1, \dots, e'_n) = \downarrow e'$.
+
+Основным требованием на оператор $\downarrow$ является то, что он не должен терять конкретные переходы:
+
+\begin{equation}
+\label{cpa_strengthen_req_1}
+\begin{aligned}
+& \forall e_0, e_1, \dots, e_n \in E_{\mathscr{C}}, t_0, \dots, t_n \in T \\
+& \epp_{\mathscr{C}}
+\left(
 \begin{pmatrix}
+e_0 \\
+t_0 
+\end{pmatrix},
+\left\{
 \begin{pmatrix}
 e_1 \\
 t_1 
-\end{pmatrix}& ,
-\dots& ,
+\end{pmatrix},
+\dots ,
+\begin{pmatrix}
+e_n \\
+t_n 
+\end{pmatrix}
+\right\}
+\right) = \\
+& \epp_{\mathscr{C}}
+\left(
+\begin{pmatrix}
+\downarrow e_0 \\
+t_0 
+\end{pmatrix},
+\left\{
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix},
+\dots ,
+\begin{pmatrix}
+e_n \\
+t_n 
+\end{pmatrix}
+\right\}
+\right)
+\end{aligned}
+\end{equation}
+
+И симметричное требование для второго аргумента:
+
+\begin{equation}
+\label{cpa_strengthen_req_2}
+\begin{aligned}
+& \forall e_0, e_1, \dots, e_n \in E_{\mathscr{C}}, t_0, \dots, t_n \in T \\
+& \epp_{\mathscr{C}}
+\left(
+\begin{pmatrix}
+e_0 \\
+t_0 
+\end{pmatrix},
+\left\{
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix},
+\dots ,
+\begin{pmatrix}
+e_n \\
+t_n 
+\end{pmatrix}
+\right\}
+\right) = \\
+& \epp_{\mathscr{C}}
+\left(
+\begin{pmatrix}
+e_0 \\
+t_0 
+\end{pmatrix},
+\left\{
+\begin{pmatrix}
+\downarrow e_1 \\
+t_1 
+\end{pmatrix},
+\dots ,
+\begin{pmatrix}
+e_n \\
+t_n 
+\end{pmatrix}
+\right\}
+\right)
+\end{aligned}
+\end{equation}
+
+Еще одно требование связывает оператор $apply$ с оператором $\downarrow$:
+\begin{equation}
+\label{cpa_strengthen_apply_req}
+\begin{aligned}
+& \downarrow apply_{\mathscr{C}}(e_1, e_2) = apply_{\mathscr{C}}(\downarrow e_1, \downarrow e_2)
+\end{aligned}
+\end{equation}
+
+
+Простой оператор $\downarrow$(определение~\ref{simple_strengthen_def}) удовлетворяет условиям~\ref{cpa_strengthen_req_1},~\ref{cpa_strengthen_req_2}, так как с учетом определения~\ref{epp_split} конкретная дуга $g \in ||q_0|| \cap \dots \cap ||q_n||$.
+То есть, сужение каждой из абстрактных дуг (по определению~\ref{simple_strengthen_def}) никак не влияет на результат оператора $\epp$.
+
+Для оператора $\downarrow$(определение~\ref{simple_strengthen_def}) требование~\ref{cpa_strengthen_apply_req} трансформируется в такое требование для внутренних CPA:
+\begin{equation}
+\label{cpa_strengthen_simple_apply_req}
+\begin{aligned}
+\forall e_1, e_2 \in E_I, g \in G \cup \mathcal{G} :
+\cancelto{g}{apply_{I}(e_1, e_2)} = apply_I(\cancelto{g}{e_1}, \cancelto{g}{e_2})
+\end{aligned}
+\end{equation}
+При этом в основном требуется доказать условие~\ref{cpa_strengthen_simple_apply_req} для $g \in G$, так как остальные две части являются тривиальными.
+Легко видеть, что из условия~\ref{cpa_strengthen_simple_apply_req}, определения~\ref{simple_strengthen_def} и определения $apply$ будет следовать выполнение условия~\ref{cpa_strengthen_apply_req}
+
+Так как композитный анализ разбивает операцию $thread\_create$ на две дуги, требование~\ref{cpa_transfer_inner_req} трансформируется в
+
+\begin{equation}
+\label{cpa_transfer_composite_req}
+\begin{aligned}
+& \forall \tau, \tau' \in \mathcal{T}, R \subseteq E: \tau \tcarrow \tau', \forall e_0, e_1, \dots, e_n \in R: e_i = (s_i, q_i) \\
+& \left(
+\begin{array}{ll}
+& \exists t_0, t_1, \dots, t_n \in T, t_i \neq t_j, t_0 = t \\
+& \tau \in \epp_I
+\left(
+\begin{pmatrix}
+e_0 \\
+t_0 
+\end{pmatrix},
+\left\{
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix} ,
+\dots ,
+\begin{pmatrix}
+e_n \\
+t_n 
+\end{pmatrix}
+\right\}
+\right)
+\end{array}
+\right) \Rightarrow \\
+& \left[ \begin{array}{ll}
+\lor q_0 & \neq thread\_create \land \\
+& \exists e'_0, e'_1, \dots, e'_n \in E, \forall 1 \leq i \leq n: e_i \tat{R} e'_i: \\
+& \exists 1 \le k \le n: t_k = t' \land \\
+& \tau' \in \epp_I((e_k', t_k), \{(\tilde{e}_i, t_i) \mid \tilde{e}_i = apply(e_i', e'_k) \land i \neq k)\}) \\
+\lor q_0 & = thread\_create \land \\
+& \exists e'_0, e'_1, \dots, e'_{n+1} \in E, \forall 0 \leq i \leq n: \\
+& \begin{cases}
+& (s_0, (l, tc_{parent}, l')) \tat{R} e'_0 \\
+& (s_0, (l, tc_{child}, l')) \tat{R} e'_{n+1} \\
+& e_i \tatarrow e'_i, \text{ если } i \neq 0
+\end{cases} \\
+& \exists 0 \le k \le n + 1:  t_k = t' \land\\
+& \tau' \in \epp_I((e_k', t_k), \{(\tilde{e}_i, t_i) \mid \tilde{e}_i = apply(e_i', e'_k) \land i \neq k)\}) 
+\end{array} 
+\right.
+\end{aligned}
+\end{equation}
+%
+%\begin{equation}
+%\label{transfer_tm_ir_stronger_for_inner_3}
+%\begin{aligned}
+%& \cdot g = thread\_join(var,num):\\
+%& \exists r: t_r \notin dom(c) \land c_t(var, num) = t_r \\
+%& \exists e_1', \dots,e_{r-1}', e_{r+1}', e_m' \in E:\\
+%& c' \in \epp
+%\begin{pmatrix}
+%\begin{pmatrix}
+%e_1' \\
+%t_1 
+%\end{pmatrix}&,
+%\dots& ,
+%\begin{pmatrix}
+%e_{r-1}' \\
+%t_{r-1} 
+%\end{pmatrix},
+%\begin{pmatrix}
+%e_{r+1}' \\
+%t_{r+1} 
+%\end{pmatrix} ,
+%\dots& ,
+%\begin{pmatrix}
+%e_m' \\
+%t_m 
+%\end{pmatrix}
+%\end{pmatrix} \\
+%& \mbox{ где } e_1',\dots,e_{r-1}', e_{r+1}', \dots e_m' \mbox{ такие, что } \\
+%&\exists i_1, \dots, i_{k-1}, i_{k+1}, \dots, i_m: \\
+%&
+%\begin{cases}
+%\forall q \neq k \land q \neq r: e_q \tat{i_q} e_q' \land i_q \in \{i \mid e_k \tat{\tau} i\} \\
+%e_k \tat{\tau, tc_{parent}} e_k' \\
+%e_k \tat{\tau, tc_{child}} e_{m+1}
+%\end{cases}
+%\end{aligned}
+%\end{equation}
+
+Теперь нужно показать, что требование~\ref{cpa_transfer_inner_req} выполнено для $\mathscr{C}$, если требование~\ref{cpa_transfer_composite_req} выполнены для всех его внутренних элементов. 
+
+\begin{proof}
+Рассмотрим случайный конкретный переход:
+$$\tau \in  \epp_{\mathscr{C}}
+\left(
+\begin{pmatrix}
+e_0 \\
+t_0 
+\end{pmatrix},
+\left\{
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix},
+\dots ,
 \begin{pmatrix}
 e_m \\
 t_m 
 \end{pmatrix}
-\end{pmatrix}$$
-где $e_1=(e^1_1, \dots, e^n_1), \dots, e_m=(e^1_m, \dots, e^n_m)$.
+\right\}
+\right)$$
+где $e_i=(e^1_i, \dots, e^n_i)$.
 
 По определению~\ref{composite_epp_def}, это означает что
-$$\forall j: 1\le j \le n: c \in  \epp_{\Delta_j}
+$$\forall j: 1\le j \le m: \tau \in  \epp_{\Delta_j}
+\left(
 \begin{pmatrix}
+e^j_0 \\
+t_0 
+\end{pmatrix},
+\left\{
 \begin{pmatrix}
 e^j_1 \\
 t_1 
-\end{pmatrix}& ,
-\dots& ,
+\end{pmatrix},
+\dots ,
 \begin{pmatrix}
 e^j_m \\
 t_m 
 \end{pmatrix}
-\end{pmatrix}$$
+\right\}
+\right)$$
 
 Возьмем случайный переход
-$ g \in G, t \in T, c \tc{g,t} c'$ и покажем, что 
-$\exists e_1', \dots, e_m': e_j \tatarrow e_j'$ и
-$c' \in  \epp_{\mathscr{C}}
+$ \tau \tcarrow \tau', \tau=(c,g,t), g \in G, t \in T, $ и покажем, что 
+$\exists e_0', \dots, e_m', \tilde{e}'_0, \dots, \tilde{e}'_{k-1}, \tilde{e}'_{k+1}, \dots, \tilde{e}'_m \in E$ и
+$\tau' \in  \epp_{\mathscr{C}}
+\left(
 \begin{pmatrix}
+e'_k \\
+t_k 
+\end{pmatrix},
+\left\{
 \begin{pmatrix}
-e_1' \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
+\tilde{e'_0} \\
+t_0 
+\end{pmatrix},
+\dots ,
 \begin{pmatrix}
-e_m' \\
+\tilde{e'_m} \\
 t_m 
 \end{pmatrix}
-\end{pmatrix}$
+\right\}
+\right)$ 
+и при этом $\tilde{e}_0', \dots, \tilde{e}_m'$ будут получены из $e_0', \dots, e_m'$, а они -- из $e_0, \dots, e_m$ указанными в~\ref{cpa_transfer_inner_req} способами.
 
 %enumerate
-\item  Сначала рассмотрим случай $g \neq thread\_create$
+Сначала рассмотрим случай $g \neq thread\_create$
 
-Используя требование~\ref{transfer_tm_ir_stronger_for_inner} для внутренних элементов, получаем, что 
-\begin{equation}
-\label{transfer_condition_for_inner}
-\begin{aligned}
-& \exists k : 1 \le k \le m \land t_k = t \\
-& \forall j: 1\le j \le n: \\
-& \exists t_1, \dots, t_n \in T, \forall p \neq q: t_p \neq t_q : \\
-& c \in \epp_{\Delta_j}
-\begin{pmatrix}
-\begin{pmatrix}
-e^j_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e^j_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} \implies \\
-& \exists \widehat{e^j_1}, \dots, \widehat{e^j_m} \in E_j:
-c' \in \epp_{\Delta_j}
-\begin{pmatrix}
-\begin{pmatrix}
-\widehat{e^j_1} \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-\widehat{e^j_m} \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} \\
-& \mbox{ where } \widehat{e^j_1} \dots \widehat{e^j_m} \mbox{ такие, что } \\
-&\exists i^j_1, \dots, i^j_{k-1}, i^j_{k+1}, \dots, i^j_m: \\
-&
-\begin{cases}
-\forall q \neq k: e^j_q \tat{i^j_q}_{\Delta_j} \widehat{e^j_q} \land i^j_q \in \{i \mid e^j_k \tat{\tau}_{\Delta_j} i\} \\
-e^j_k \tat{\tau}_{\Delta_j} \widehat{e^j_k} 
-\end{cases} 
-\end{aligned}
-\end{equation}
+Используя требование~\ref{cpa_transfer_composite_req} для внутренних элементов, получаем, что 
+\begin{align*}
+& \forall 0 \le j \le m: \exists {e^j_0}', {e^j_1}', \dots, {e^j_n}' \in E: \\
+& \forall 1 \leq i \leq n: e^j_i \tat{R} {e^j_i}': \exists 1 \le k \le n: t_k = t' \land \\
+& \tau' \in \epp_I(({e^j_k}', t_k), \{(\tilde{e^j_i}, t_i) \mid \tilde{e^j_i} = apply({e^j_i}', {e^j_k}') \land i \neq k)\})
+\end{align*}
 
-Заметим, что $k$ является одним и тем же, для всех внутренних элементов и $t_i \neq t_j$, поэтому можно объединить все внутренние состояния следующим способом:
+Заметим, что $k$ является одним и тем же для всех внутренних элементов, так как есть только одно $t_k = t'$, а множество $t_0, t_1, \dots, t_n$ -- общее для всех CPA.
+Поэтому можно объединить все внутренние переходы следующим способом:
+$ \forall 1 \le i \le n: e_i' = ({e^1_i}', \dots, {e^m_i}')$
+Таким образом, $\tau' \in \epp_{\mathscr{C}}((e_k', t_k), \{(\tilde{e_i}, t_i) \mid \tilde{e_i} = apply(e'_i, e'_k) \land i \neq k)\})$.
+По условиям~\ref{cpa_strengthen_req_1},~\ref{cpa_strengthen_req_2},~\ref{cpa_strengthen_apply_req} $\tau' \in \epp_{\mathscr{C}}((\downarrow e_k', t_k), \{(\downarrow \tilde{e_i}, t_i) \mid \tilde{e_i} = apply(e'_i, e'_k) \land i \neq k)\})$.
 
-\begin{align}
-& \forall q: 1 \le q \le m: e_q' = (\widehat{e^1_q}, \dots, \widehat{e^n_q}) \nonumber \\
+По определению $transfer$ в композитном анализе, получаем, что $\forall 1 \le i \le n: e_i \tatarrow \downarrow e_i'$, а по определению $apply$: $\forall 1 \le i \le n: \tilde{e_i} = apply(e_i', e_k') = (\tilde{e^0_i}, \dots, \tilde{e^m_i})$.
+А это означает, что выполнено условие~\ref{cpa_transfer_inner_req}.
+Это как раз то, что нам нужно было доказать. 
+
+Рассмотрим случай $g = thread\_create$.
+
+Используя требование~\ref{cpa_transfer_composite_req} для внутренних элементов, получаем, что 
+\begin{align*}
+& \exists e'_0, e'_1, \dots, e'_{n+1} \in E, \forall 0 \leq i \leq n: \\
 & \begin{cases}
-& i_q = (i^1_q, \dots, i^n_q), \mbox{ if } q \neq k \\
-& i_k = (\tau, \dots, \tau)
-\end{cases} \nonumber
-\end{align}
+& (s_0, (l, tc_{parent}, l')) \tat{R} e'_0 \\
+& (s_0, (l, tc_{child}, l')) \tat{R} e'_{n+1} \\
+& e_i \tatarrow e'_i, \text{ если } i \neq 0
+\end{cases} \\
+& \exists 0 \le k \le n + 1:  t_k = t' \land\\
+& \tau' \in \epp_I((e_k', t_k), \{(\tilde{e}_i, t_i) \mid \tilde{e}_i = apply(e_i', e'_k) \land i \neq k)\}) 
+\end{align*}
 
-Используя определение~\ref{composite_transfer_eq} отношения перехода в композитном анализе, получаем:
+Заметим, что $k$ является одним и тем же для всех внутренних элементов, так как есть только одно $t_k = t'$, а множество $t_0, t_1, \dots, t_n$ -- общее для всех CPA.
+Поэтому можно объединить все внутренние переходы следующим способом:
+$ \forall 1 \le i \le n+1: e_i' = ({e^1_i}', \dots, {e^m_i}')$.
+Таким образом, $\tau' \in \epp_{\mathscr{C}}((e_k', t_k), \{(\tilde{e_i}, t_i) \mid \tilde{e_i} = apply(e'_i, e'_k) \land i \neq k)\})$.
+По условиям~\ref{cpa_strengthen_req_1},~\ref{cpa_strengthen_req_2},~\ref{cpa_strengthen_apply_req} $\tau' \in \epp_{\mathscr{C}}((\downarrow e_k', t_k), \{(\downarrow \tilde{e_i}, t_i) \mid \tilde{e_i} = apply(e'_i, e'_k) \land i \neq k)\})$.
 
-\begin{equation}
-\label{composite_transfer_eq_2}
-\begin{aligned}
-& e_1 \tat{i_1}_{\mathscr{C}} e_1', i_1 \in \{i' \mid e_k \tat{\tau}_{\mathscr{C}} i'\} \\
-& \dots \\
-& e_k \tat{\tau}_{\mathscr{C}} e_k', e_k \tat{\tau}_{\mathscr{C}} i'\\
-& e_{k+1} \tat{i_{k+1}}_{\mathscr{C}} e_{k+1}', i_{k+1} \in \{i' \mid e_k \tat{\tau}_{\mathscr{C}} i'\} \\
-& \dots \\
-& e_m \tat{i_m}_{\mathscr{C}} e_m', i_m \in \{i' \mid e_k \tat{\tau}_{\mathscr{C}} i'\} 
-\end{aligned}
-\end{equation}
-
-Теперь используем условие на внутренние элементы~\ref{transfer_condition_for_inner}
-
-\begin{align}
-& \forall j, c' \in  \epp_{\Delta_j}
-\begin{pmatrix}
-\begin{pmatrix}
-\widehat{e^j_1} \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-\widehat{e^j_m} \\
-t_m 
-\end{pmatrix}
-\end{pmatrix}
-\implies (def.~\ref{composite_epp_def}) \implies
-c' \in  \epp_{\mathscr{C}}
-\begin{pmatrix}
-\begin{pmatrix}
-e_1' \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_m' \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} \nonumber \\
-& \mbox{ where } e_1' \dots e_m' \mbox{ такие, что (условие~\ref{composite_transfer_eq_2})} \nonumber \\
-&\exists i_1, \dots, i_m, k: 1 \le k \le m, t_k = t :\nonumber \\
-& \begin{cases}
-\forall q \neq k: e_q \tat{i_q}_{\mathscr{C}} e_q' \land i_q \in \{i \mid e_k \tat{\tau}_{\mathscr{C}} i\} \\
-e_k \tat{\tau}_{\mathscr{C}} e_k' 
-\end{cases} \nonumber 
-\end{align}
-
-Это как раз то, что нам нужно доказать. 
-
-\item  Рассмотрим случай $g = thread\_create$.
-Используем требования~\ref{transfer_tm_ir_stronger_for_inner} для внутренних элементов и получаем, 
-\begin{equation}
-\label{transfer_condition_for_inner_thread_create}
-\begin{aligned}
-& \exists k : 1 \le k \le m \land t_k = t \\
-& \forall j: 1\le j \le n: \\
-& \exists t_1, \dots, t_n \in T, \forall p \neq q: t_p \neq t_q : \\
-& c \in \epp_{\Delta_j}
-\begin{pmatrix}
-\begin{pmatrix}
-e^j_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e^j_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} \implies \\
-& \exists \widehat{e^j_1}, \dots, \widehat{e^j_{m+1}} \in E_j:
-c' \in \epp_{\Delta_j}
-\begin{pmatrix}
-\begin{pmatrix}
-\widehat{e^j_1} \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-\widehat{e^j_{m+1}} \\
-t_{m+1} 
-\end{pmatrix}
-\end{pmatrix} \\
-& \mbox{ где } \widehat{e^j_1} \dots \widehat{e^j_{m+1}} \mbox{ такие, что } \\
-&\exists i^j_1, \dots, i^j_m: \\
-&
-\begin{cases}
-\forall q \neq k: e^j_q \tat{i^j_q}_{\Delta_j} \widehat{e^j_q} \land i^j_q \in \{i \mid e^j_k \tat{\tau}_{\Delta_j} i\} \\
-e^j_k \tat{\tau, tc_{parent}}_{\Delta_j} \widehat{e^j_k} \\
-e^j_k \tat{\tau, tc_{child}}_{\Delta_j} \widehat{e^j_{m+1}}
-\end{cases} 
-\end{aligned}
-\end{equation}
-
-Заметим, что $k$ является одинаковым для всех внутренних элементов и поэтому можно объединить все внутренние состояния следующим способом:
-
-\begin{align}
-& \forall q: 1 \le q \le m + 1: e_q' = (\widehat{e^1_q}, \dots, \widehat{e^n_q}) \nonumber \\
-& \begin{cases}
-& i_q = (i^1_q, \dots, i^n_q), \mbox{ if } q \neq k \\
-& i_k = (\tau, \dots, \tau)
-\end{cases} \nonumber
-\end{align}
-
-Используя определение~\ref{composite_transfer_eq} отношения переходов композитного анализа, получаем:
-
-\begin{equation}
-\label{composite_transfer_eq_3}
-\begin{aligned}
-& e_1 \tat{i_1}_{\mathscr{C}} e_1', i_1 \in \{i' \mid e_k \tat{\tau}_{\mathscr{C}} i'\} \\
-& \dots \\
-& e_k \tat{\tau}_{\mathscr{C}} e_k', e_k \tat{\tau}_{\mathscr{C}} i'\\
-& e_k \tat{\tau}_{\mathscr{C}} e_{m+1}'\\
-& e_{k+1} \tat{i_{k+1}}_{\mathscr{C}} e_{k+1}', i_{k+1} \in \{i' \mid e_k \tat{\tau}_{\mathscr{C}} i'\} \\
-& \dots \\
-& e_m \tat{i_m}_{\mathscr{C}} e_m', i_m \in \{i' \mid e_k \tat{\tau}_{\mathscr{C}} i'\}
-\end{aligned}
-\end{equation}
-
-Теперь используем требование~\ref{transfer_condition_for_inner_thread_create}
-
-\begin{align}
-& \forall j, c' \in  \epp_{\Delta_j}
-\begin{pmatrix}
-\begin{pmatrix}
-\widehat{e^j_1} \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-\widehat{e^j_m} \\
-t_m 
-\end{pmatrix}
-\end{pmatrix}
-\implies (def.~\ref{composite_epp_def}) \implies
-c' \in  \epp_{\mathscr{C}}
-\begin{pmatrix}
-\begin{pmatrix}
-e_1' \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_{m+1}' \\
-t_{m+1} 
-\end{pmatrix}
-\end{pmatrix} \nonumber \\
-& \mbox{ где } e_1' \dots e_{m+1}' \mbox{ такие, что (условие~\ref{composite_transfer_eq_3})} \nonumber \\
-&\exists i_1, \dots, i_m, k: 1 \le k \le m, t_k = t :\nonumber \\
-& \begin{cases}
-\forall q \neq k: e_q \tat{i_q}_{\mathscr{C}} e_q' \land i_q \in \{i \mid e_k \tat{\tau}_{\mathscr{C}} i\} \\
-e_k \tat{\tau}_{\mathscr{C}} e_k' \\
-e_k \tat{\tau}_{\mathscr{C}} e_{m+1}
-\end{cases} \nonumber 
-\end{align}
+По определению $transfer$ в композитном анализе, получаем, что $\forall 1 \le i \le n: e_i \tatarrow \downarrow e_i' \land e_0 \tatarrow \downarrow e'_{n+1}$, а по определению $apply$: $\forall 1 \le i \le n: \tilde{e_i} = apply(e_i', e_k') = (\tilde{e^0_i}, \dots, \tilde{e^m_i})$.
+А это означает, что выполнено условие~\ref{cpa_transfer_inner_req}.
+Это как раз то, что нам нужно было доказать. 
+\end{proof}
 
 \qedsymbol
 
-% TODO: Is it a requirement or follows from the other requirements?
-
 \item 
-Оператор слияния может определяться различными способами, в зависимости от требований к анализу.
+Оператор слияния $merge$ может определяться различными способами, в зависимости от требований к анализу.
 
 Самый простой способ: использовать оператор $merge$ каждого из внутренних видов анализа.
-$merge^E_{\mathscr{C}}(e_1,e_2,\pi) = (merge^E_{\Delta_1}(e_1^1, e_2^1,\pi), \dots, merge^E_{\Delta_n}(e_1^n, e_2^n,\pi))$.
-В этом случае объединение состояний каждого из внутренних вариантов анализа производится независимо друг от друга.
-Проверим условие~\ref{cpa_merge_tm_e_eq}.
-Воспользуемся тем, что внутренние CPA удовлетворяют условию~\ref{cpa_merge_tm_e_eq}, то есть $\forall i: e_2^i \sqsubseteq^E merge^E_{\Delta_i}(e_1^i, e_2^i,\pi)$.
-По определению решетки $\mathscr{C}$ это означает, что $(e_2^1, \dots, e_2^n) = e_2 \sqsubseteq merge^E_{\mathscr{C}}(e_1,e_2,\pi)$.
+
+$merge_{\mathscr{C}}(e_1,e_2,\pi) = (merge_{\Delta_1}(e_1^1, e_2^1,\pi), \dots, merge_{\Delta_n}(e_1^n, e_2^n,\pi))$.
+В этом случае объединение переходов каждого из внутренних вариантов анализа производится независимо друг от друга.
+Проверим условие~\ref{cpa_merge_eq}.
+Воспользуемся тем, что внутренние CPA удовлетворяют условию~\ref{cpa_merge_eq}, то есть $\forall 1 \le i \le n: e_2^i \sqsubseteq merge_{\Delta_i}(e_1^i, e_2^i,\pi)$.
+По определению решетки $\mathscr{C}$ это означает, что $(e_2^1, \dots, e_2^n) = e_2 \sqsubseteq merge_{\mathscr{C}}(e_1,e_2,\pi)$.
 
 Такой простой вариант объединения состояний не очень эффективен, например, состояния различных потоков не всегда имеет смысл обединять.
 Для этого возможно объединение состояний, если состояния некоторого вида анализа равны. 
 
-\begin{align}
-merge^E_{\mathscr{C}}(e_1,e_2,\pi) =
-& \begin{cases}
-(e_1^1, merge^E_{\Delta_1}(e_1^2, e_2^2,\pi), \dots, merge^E_{\Delta_n}(e_1^n, e_2^n,\pi)), \mbox{ если } e_1^1 = e_2^1 \\
-e_2, \mbox{ иначе }
-\end{cases} \nonumber
-\end{align}
+\begin{align*}
+merge_{\mathscr{C}}(e_1,e_2,\pi) =
+\begin{cases}
+&(e_1^1, merge_{\Delta_1}(e_1^2, e_2^2,\pi), \dots, merge_{\Delta_n}(e_1^n, e_2^n,\pi)), \\
+& \hspace{1cm} \mbox{ если } e_1^1 = e_2^1 \\
+& e_2, \mbox{ иначе }
+\end{cases} 
+\end{align*}
 
-В таком примере первый анализ определяет, что можно объединять остальные состояния, если его состояния совпадают.
-Проверим условие~\ref{cpa_merge_tm_e_eq}.
-Снова воспользуемся тем, что внутренние CPA удовлетворяют условию~\ref{cpa_merge_tm_e_eq}, то есть $\forall i: e_2^i \sqsubseteq^E merge^E_{\Delta_i}(e_1^i, e_2^i,\pi)$.
-Заметим при этом, что это условие выполнено и для $i = 1$, так как $e_2^1 \sqsubseteq e_2^1$.
-По определению решетки $\mathscr{C}$ это означает, что $(e_2^1, \dots, e_2^n) = e_2 \sqsubseteq merge^E_{\mathscr{C}}(e_1,e_2,\pi)$.
-
-Другой вариант является согласованное объединение, которое выполняется, только если все внутренние CPA согласны объединить состояния, то есть результатом выполнения каждого внутреннего оператора $merge$ является нетривиальное состояние.
-
-\begin{align}
-merge^E_{\mathscr{C}}(e_1,e_2,\pi) =
-& \begin{cases}
-(merge^E_{\Delta_1}(e_1^1, e_2^1,\pi), \dots, merge^E_{\Delta_n}(e_1^n, e_2^n,\pi)),\\
-\mbox{ если } \forall i, merge^E_{\Delta_i}(e_1^i, e_2^i,\pi) \neq e_2^i \\
-e_2, \mbox{ иначе }
-\end{cases} \nonumber
-\end{align}
-
-Доказательство условия~\ref{cpa_merge_tm_e_eq} полностью повторяет предыдущие два.
+В таком примере состояния объединяются только при совпадении (равенстве) состояний первого анализа ($i=1$).
+Очевидно, что такой вариант оператора $merge$ тоже удовлетворяет условию~\ref{cpa_merge_eq}, так как для $i = 1: e_2^1 \sqsubseteq e_2^1$.
 
 \item 
-$stop_{\mathscr{C}}(e,R,\pi)=\forall j \mbox{ } stop^E_{\Delta_j}(e_j, R_j, \pi)$, где $R_j = \{e_j \mid e \in R \land e = (\dots, e_j, \dots)\}$
+$stop_{\mathscr{C}}(e,R,\pi)=\forall j \mbox{ } stop_{\Delta_j}(e_j, R_j, \pi)$, где $R_j = \{e_j \mid e \in R \land e = (\dots, e_j, \dots)\}$
 
-Проверим условие~\ref{cpa_stop_tm_e_eq} для $\mathscr{C}$.
-По условию~\ref{cpa_stop_tm_e_eq} для внутренних CPA выполнено $\forall 1 \le i \le n, \widehat{R_i} \subseteq E_i: \conc{\widehat{R_i} \cup \{e_i\}}_{TM} \subseteq \conc{R_i \cup \widehat{R_i}}_{TM}$.
+Проверим условие~\ref{cpa_stop_eq} для $\mathscr{C}$.
+По условию~\ref{cpa_stop_eq} для внутренних CPA выполнено $\forall 1 \le i \le n, \widehat{R_i} \subseteq E_i: \conc{\widehat{R_i} \cup \{e_i\}}_{TM} \subseteq \conc{R_i \cup \widehat{R_i}}_{TM}$.
 Рассмотрим множество $\widehat{R} = \widehat{R_1} \times \dots \times \widehat{R_n} \subseteq E$. 
 $\conc{\widehat{R} \cup \{e\}}_{TM} = \conc{\widehat{R_1} \cup \{e_1\}}_{TM} \cap \dots \cap \conc{\widehat{R_n} \cup \{e_n\}}_{TM} \subseteq \conc{R_1 \cup \widehat{R_1}}_{TM} \cap \dots \cap \conc{R_n \cup \widehat{R_n}}_{TM} = \conc{R \cup \widehat{R}}_{TM}$.
 
 \item 
-$prec_{\mathscr{C}}(e,\pi)=(prec^E_{\Delta_1}(e_1, \pi_1), \dots, prec^E_{\Delta_n}(e_n, \pi_n)$. Условие~\ref{prec_tm_e_equation} выполнено для композитного анализа, если оно выполнено для каждого из внутренних видов анализа $\Delta_j$, так как по определению $e \sqsubseteq e' \iff \forall j: e_j \sqsubseteq e_j'$.
+$prec_{\mathscr{C}}(e,\pi)=(prec_{\Delta_1}(e_1, \pi_1), \dots, prec_{\Delta_n}(e_n, \pi_n)$. Условие~\ref{cpa_prec_eq} выполнено для композитного анализа, если оно выполнено для каждого из внутренних видов анализа $\Delta_j$, так как по определению $e \sqsubseteq e' \iff \forall j: e_j \sqsubseteq e_j'$.
 
 \item 
-$compatible_{\mathscr{C}}(e, i) = compatible_{\Delta_1}(e_1, i_1) \land \dots \land compatible_{\Delta_n}(e_n, i_n)$
+$compatible_{\mathscr{C}}(e_1, e_2) = compatible_{\Delta_1}(e^1_1, e^1_2) \land \dots \land compatible_{\Delta_n}(e^n_1, e^n_2)$.
+
+\item 
+$composite_{\mathscr{C}}(e_1, e_2) = (composite_{\Delta_1}(e^1_1, e^1_2), \dots, composite_{\Delta_n}(e^n_1, e^n_2))$.
+
+\item 
+$e|_{p\mathscr{C}} = (e_1|_{p\Delta_1}, \dots, e_n|_{p\Delta_n})$.
 
 \end{itemize}
 \section{Простой анализ потоков}
 \label{sect_thread_analysis}
 Определим анализ потоков, инвариантный к переходам по окружению, 
-$\mathbb{T}=(D_{T},$ $\Pi_{T}, \tatarrow_{T},$ $merge^E_{T}, stop^E_{T},$ $prec^E_{T}, compatible_{T})$, который будет определять идентификаторы потоков.
+$\mathbb{T}=(D_{T},$ $\Pi_{T}, \tatarrow_{T},$ $merge_{T}, stop_{T},$ $prec_{T}, compatible_{T},$ $composite_{T},$ $\cdot|_p)$, который будет определять идентификаторы потоков.
 
 Анализ потоков содержит те же ограничения, что и анализ, представленный в статье~\cite{ThreadModular03}, и его применение ограничено на программы с ограниченным количеством создаваемых потоков.
 Предполагаем, что программа имеет ограниченное количество потоков, определяемые точками создания этих потоков, то есть $T\subseteq L$ и для $thread\_create(pc_\nu)$ всегда создается поток с идентификатором $pc_\nu$.
 Заметим, что остальные виды анализа не ограничены количеством создаваемых потоков.
 
-{\textbf 1.} Домен $D_T$ основан на решетке над множеством идентификаторов потоков $T$: 
-$D_T = (C, \mathcal{E}, \mathcal{I}, \epp)$, где $\mathcal{E}=(E_T, \top^E, \bot^E, \sqsubseteq^E, \sqcup^E)$, $E_T=T \cup \{\bot^E,\top^E\}$, $\bot^E \sqsubseteq t \sqsubseteq^E \top^E$ и $t \neq t'$ $\Rightarrow$ $t \not\sqsubseteq^E t'$ для всех элементов $t, t'\in T$ 
-(что означает $\bot^E \sqcup^E t = t$, $\top^E \sqcup t = \top^E$, $t \sqcup^E t' = \top^E$ для всех элементов $t,t'\in T$, $t\neq t'$), 
-и 
-\begin{itemize}
-\item $\forall t_1, \dots, t_j \in T:$
-\begin{equation}
-\begin{aligned}
-& compatible^E(\{t_1,\dots, t_j\}) = \forall k\ne m: t_k\ne t_m\\
-\end{aligned}
-\end{equation}
+Воспользуемся общим видом анализа с явным видом переходов, описанном в подразделе~\ref{subsect_transitions}.
 
-\item $\forall t_1, \dots, t_j \in T:$
+\begin{itemize}
+
+\item Множество абстрактных состояний $E^E_T=T \cup \{\bot^E,\top^E\}$, $\bot^E \sqsubseteq t \sqsubseteq^E \top^E$ и $t \neq t'$ $\Rightarrow$ $t \not\sqsubseteq^E t'$ для всех элементов $t, t'\in T$ 
+(что означает $\bot^E \sqcup^E t = t$, $\top^E \sqcup t = \top^E$, $t \sqcup^E t' = \top^E$ для всех элементов $t,t'\in T$, $t\neq t'$).
+
+В данном анализе требуется расширенный оператор проверки совместности:
+
+\begin{align*}
+& \forall t_0, \dots, t_j \in T: \\
+& check_C((s_0, t_0), \{(s_1, t_1),\dots, (s_n,t_n)\}) = \forall i\ne j: t_i \neq t_j \land s_i \sqsubseteq t_i
+\end{align*}
+
+Оператор композиции для состояний
+
+$\forall t_1, \dots, t_n \in T:$
 \begin{equation}
 \begin{aligned}
-& \epp(t_1,\dots,t_j) = 
-\begin{cases}
-& \left\lbrace (c_{pc},c_l,c_g,c_s) \in C 
-\left| 
-\begin{array}{c}
-dom(c_{pc}) = \{t_1, \dots, t_j\}\\
-dom(c_l) = \{t_1, \dots, t_j\}\\
-\end{array}
-\right.
-\right\rbrace, \\
-& \mbox{if } compatible^E(\{t_1,\dots, t_j\})\\
-& \emptyset \mbox{ else}
+& \epp^S_T
+\left(
+\begin{pmatrix}
+s_0 \\
+t_0 
+\end{pmatrix},
+\left\{
+\begin{pmatrix}
+s_1 \\
+t_1 
+\end{pmatrix},
+\dots ,
+\begin{pmatrix}
+s_n \\
+t_n 
+\end{pmatrix}
+\right\}
+\right) =  \\
+& \begin{cases}
+& \{(c_{pc},c_l,c_g,c_s) \in C \mid dom(c) = \{t_0, \dots, t_n\}\}, \\
+& \hspace{1cm} \mbox{if } check_C((s_0, t_0), \{(s_1, t_1),\dots, (s_n,t_n)\})\\
+& \emptyset \mbox{, else}
 \end{cases}
 \end{aligned}
 \end{equation}
 
-\item $\mathcal{I}=\{\varepsilon\}$. 
-\end{itemize}
+Такое определение оператора $\epp$ очевидно удовлетворяет условиям~\ref{cpa_tm_epp_split_req_1},~\ref{cpa_tm_epp_split_req_2}, так как, фактически, результат не зависит от состояний $s_i$, которые влияют только на оператор $check_C$.
 
-{\textbf 2.} Множество точности не используется и состоит из одного элемента: $\Pi_T = \{\pi_0\}$.
+Множество абстрактных дуг содержит только тождественную дугу, которая не меняет абстрактное состояние, и верхний и нижний элементы решетки: $\mathcal{G} = \{\bot^T_T, \varepsilon, \top^T_T\}$.
+Оператор конкретизации для дуг является тривиальным: $||\bot^T_T|| = \emptyset$, $||\varepsilon|| = ||\top^T_T|| = G$.
 
-{\textbf 3.} Отношение переходов $\tatarrow_T$ определяет переход $t \tat{\tau, g}_T (t', \pi)$ если $t=t'$ и $g=(\cdot,op,\cdot)$ и 
+\item Множество точности не используется и состоит из одного элемента: $\Pi_T = \{\{\emptyset\}\}$.
+
+\item Отношение переходов $\tatarrow_T$ определяет переход $e \tatarrow_T (e', \pi)$, $g=(\cdot,op,\cdot)$, если 
 \begin{itemize}
-\item $op \neq tc_{parent}$ и $op\neq tc_{child}$ (синтаксический дочерний элемент ГПУ без учета семантики операции $op$). 
-\item $op=tc_{parent}(l_\nu)$, тогда $t \tat{\tau, g}_T (t, \pi)$,
-\item $op=tc_{child}(l_\nu)$, тогда $t \tat{\tau, g}_T (l_\nu, \pi)$.
+\item $op\neq tc_{child}$ и $e' = (t, \top)$, то есть текущий поток не меняется.
+\item $op=tc_{child}(l_\nu)$, тогда $e' = (l_\nu, \top)$, то есть текущий поток становится равным созданному.
 \end{itemize}
 
-Переход $\top \tat{\tau, g}_T (\top, \pi)$ определен для всех $g\in G$.
+Переход $\top \tat{\tau, g}_T (\top, \pi)$ определен для всех $g\in G$, однако на практике переход будет усилен (определение~\ref{simple_strengthen_def}) в CompositeCPA.
 
-$\forall t,i \in E_T: compatible^E(t,i) \implies t \tat{i, g}_T (t, \pi)$, потому что 
-\begin{itemize}
-\item эффекты окружения защищают переход от проверки неравенста идентификаторов потока в операторе $compatible$,
-\item состояния являются {\em инвриантными к окружению}, i.e. ни один поток не может изменить идентификатор другого потока.
-\end{itemize}
+\item Оператор слияния не объединяет абстрактные состояния: $merge_T(e, e', \pi) = e'$. Условие~\ref{cpa_merge_eq} очевидно выполнено.
 
-{\textbf 4.} Оператор слияния не объединяет абстрактные состояния: $merge^E_T(e, e', \pi) = e'$. Условие~\ref{cpa_merge_tm_e_eq} очевидно выполнено.
-
-{\textbf 5.} Оператор останова для абстрактных состояний проверяет наличие абстрактного состояния во множестве достижимых состояний: $stop^E_T(e, R, \pi) = (e \in R)$.
-Проверим условие~\ref{cpa_stop_tm_e_eq}.
+\item Оператор останова для абстрактных переходов проверяет наличие абстрактного перехода во множестве достижимых состояний: $stop_T(e, R, \pi) = (e \in R)$.
+Проверим условие~\ref{cpa_stop_eq}.
 Возьмем $\widehat{R} \subseteq E_T: \conc{\widehat{R} \cup e}_TM \subseteq \conc{\widehat{R} \cup e \cup R}_TM = \conc{\widehat{R} \cup R}_TM$.
 
-{\textbf 6.} Точность состояний анализа никогда не меняется: $prec^E_T(e, \pi, R) = (e, \pi)$. Условие~\ref{prec_tm_e_equation} выполнено, так как $e \sqsubseteq e$.
+\item Точность переходов никогда не меняется: $prec_T(e, \pi, R) = (e, \pi)$. Условие~\ref{cpa_prec_eq} выполнено, так как $e \sqsubseteq e$.
 
-{\textbf 7.} $compatible_T(e,i) \equiv compatible^E(e,i)$
+\item $\forall e_1, e_2 \in E_T, e_i = (s_i, q_i):compatible_T(e_1,e_2) = s_1 \neq s_2$.
 
+\item Переходы являются {\em инвариантными к окружению}, то есть ни один поток не может изменить идентификатор другого потока.
+Это означает, что проекцией является тождественный переход:
+$(s, q)|_p = (s, \varepsilon)$.
+
+\item Оператор $compose$ является обычным~\ref{default_compatible_def}.
+\end{itemize}
+
+Теперь нужно доказать, что определенные таким образом операторы $transfer$ и $apply$ удовлетворяют условиям~\ref{cpa_transfer_inner_req},~\ref{cpa_strengthen_simple_apply_req}.
+
+\begin{proof}
+Рассмотрим случайный конкретный переход:
+$$\tau \in  \epp_{T}
+\left(
+\begin{pmatrix}
+e_0 \\
+t_0 
+\end{pmatrix},
+\left\{
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix},
+\dots ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\right\}
+\right)$$.
+
+Если $op \neq thread\_create$, по определению $transfer$ $e'_i = (s_i, \top^T_T)$, то есть состояние не изменяется, а переходы рассматриваются все возможные. 
+А значит, 
+$$\tau' \in  \epp_{T}
+\left(
+\begin{pmatrix}
+e'_0 \\
+t_0 
+\end{pmatrix},
+\left\{
+\begin{pmatrix}
+e'_1 \\
+t_1 
+\end{pmatrix},
+\dots ,
+\begin{pmatrix}
+e'_m \\
+t_m 
+\end{pmatrix}
+\right\}
+\right)$$
+
+Если $op = tc\_{Child} \lor op = tc\_{Parent}$ состояние меняется только у дочернего потока: $e_{m+1} = (l_{\nu}, \top^T_T)$.
+То есть, 
+$$\tau' \in  \epp_{T}
+\left(
+\begin{pmatrix}
+e'_0 \\
+t_0 
+\end{pmatrix},
+\left\{
+\begin{pmatrix}
+e'_1 \\
+t_1 
+\end{pmatrix},
+\dots ,
+\begin{pmatrix}
+e'_m \\
+t_m 
+\end{pmatrix} ,
+\begin{pmatrix}
+e'_{m+1} \\
+l_{\nu} 
+\end{pmatrix}
+\right\}
+\right)$$
+
+Теперь проверим условие на $apply$. 
+$\cancelto{g}{e} = (s, g)$, по определению $apply$: 
+
+\end{proof}
 %----------------------------------------------------
 %----------------------------------------------------
 %----------------------------------------------------
 \section{Анализ точек программы}
 \label{sect_location_analysis}
 
-Определим анализ точек программы (Location Analysis), инвариантный к переходам по окружению,
-$\mathbb{L}=(D_{L},$ $\Pi_{L}, \tatarrow_{L}, merge^E_{L}, stop^E_{L}, prec^E_{L}, compatible_{L})$, который отвечает за синтаксическую достижимость точек программы.
+Определим анализ точек программы (LocationCPA), инвариантный к переходам по окружению,
+$\mathbb{L}=(D_{L},$ $\Pi_{L}, \tatarrow_{L}, merge_{L}, stop_{L}, prec_{L},$ $compatible_{L},$ $\cdot|_p,$ $compose_L)$, который отвечает за синтаксическую достижимость точек программы.
 Классический вариант этого анализа описан в~\cite{Beyer08}.
 Расширим его компоненты для возможности его применения в анализе с раздельным рассмотрением потоков.
+
+Воспользуемся общим видом анализа с явным видом переходов, описанном в подразделе~\ref{subsect_transitions}.
  
-{\textbf 1.} Абстрактный домент $D_L$ основан на плоской решетке над множеством точек программы $L$: 
-$D_L = (C, \mathcal{E}, \mathcal{I}, compatible^E, \epp)$, с $\mathcal{E}=(E_L, \top^E, \bot^E, \sqsubseteq^E, \sqcup^E)$, $E_L= L \cup \{\bot^E,\top^E\}$, $\bot^E \sqsubseteq l \sqsubseteq^E \top^E$ and $l \neq l'$ $\Rightarrow$ $l \not\sqsubseteq^E l'$ для всех элементов $l, l' \in L$ 
+\begin{enumerate}
+
+\item 
+Множество абстрактных состояний $E^S_L$ состоит из абстрактных точек программы, которые отображаются на конкретные узлы ГПУ с помощью функции $loc: E^S_L \rightarrow 2^L$.
+$\top^S_L$ означает, что анализ не может определить конкретную точку программы, формально, $loc(\top^S_L) = L$.
+В общем случае анализ может работать с абстрактными точками программы, которые выражают несколько конкретных точек программы, но такой вариант является слишком общим и пока не нашел применения на практике, поэтому дальше мы будем рассматривать упрощенную вариацию этого анализа, в котором рассматриваются только одиночные точки программы: $\forall s \in E^S_L: s = \top^S_L \lor s=\bot^S_L \lor loc(s) = l \in L$.
+Определенная таким образом $\mathcal{E}^S_L$ является плоской решеткой, что означает, что две различные точки программы являются несравнимыми: $l \neq l'$ $\Rightarrow$ $l \not\sqsubseteq^E l'$ для всех элементов $l, l' \in L$ 
 (отсюда следует $\bot^E \sqcup^E l = l$, $\top^E \sqcup l=\top^E$, $ l\sqcup^E l' = \top^E$ для всех элементов $l,l'\in L$, $l\neq l'$), 
 и
-$\forall l_1, \dots, l_j \in L:$
+
+В данном анализе оператор является тривиальным, так как потоки могут находиться в любых точках программы независимо друг от друга:
+
+\begin{align*}
+& \forall t_0, \dots, t_j \in T: check_C(\{s_0, \dots, s_n,\}) \equiv true
+\end{align*}
+
+Оператор композиции для состояний
+
 \begin{equation}
 \label{location_epp_def}
 \begin{aligned}
-\epp_{\mathbb{L}}
+&\forall l_1, \dots, l_n \in E^S_L:\\
+&\epp^S_{L}
 \begin{pmatrix}
 \begin{pmatrix}
 l_1 \\
@@ -2045,11 +2090,11 @@ t_1
 \end{pmatrix}& ,
 \dots& ,
 \begin{pmatrix}
-l_m \\
-t_m 
+l_n \\
+t_n 
 \end{pmatrix}
-\end{pmatrix} = 
-\left\lbrace (c_{pc},c_l,c_g,c_s) \in C 
+\end{pmatrix} = \\
+& \left\lbrace (c_{pc},c_l,c_g,c_s) \in C 
 \left| 
 \begin{array}{c}
 t_1, \dots, t_m \in T\\
@@ -2068,23 +2113,25 @@ dom(c_l) = \{t_1, \dots, t_m\}\\
 \end{aligned}
 \end{equation}
 
-$\mathcal{I}=(I_L, \top^I, \bot^I, \sqsubseteq^I, \sqcup^I)$ содержит один элемент ($I_L=\{\varepsilon\}$), так как состояния этого анализа {\em инвариантны к окружению}, то есть ни один поток не может изменить точку в программе, на которой находится другой поток.
+Такое определение оператора $\epp$ очевидно удовлетворяет условиям~\ref{cpa_tm_epp_split_req_1},~\ref{cpa_tm_epp_split_req_2}.
 
-{\textbf 2.} Множество точности содержит только один элемент $\Pi_L = \{\pi_0\}$, так как не подразумевается применение абстракции.
+Множество абстрактных дуг содержит только тождественную дугу, которая не меняет абстрактное состояние, и верхний и нижний элементы решетки: $\mathcal{G} = \{\bot^T_T, \varepsilon, \top^T_T\}$.
+Оператор конкретизации для дуг является тривиальным: $||\bot^T_T|| = \emptyset$, $||\varepsilon|| = ||\top^T_T|| = G$.
+Cостояния этого анализа {\em инвариантны к окружению}, то есть ни один поток не может изменить точку в программе, на которой находится другой поток.
 
-{\textbf 3.} Отношение переходов $\tatarrow_L$ содержит переход $l \tat{\tau, g}_L (l', \pi)$, где $g=(l_1,op,l_2)$, если $l_1 = l$ и
+\item Множество точности содержит только один элемент $\Pi_L = \{\{\emptyset\}\}$, так как не подразумевается применение абстракции.
+
+\item Отношение переходов $\tatarrow_L$ содержит переход $e \tatarrow_L (e', \pi)$, где $e = (s, q)$, если 
 \begin{itemize}
-\item $op \neq tc_{child}$ и $l' = l_2$ (следующее состояние в ГПУ без учета семантики операции $op$). 
-\item $op=tc_{child}(l_\nu)$ и $l_2 = l_\nu$. 
+\item $q \in G, q=(l_1,op,l_2)$, $l_1 \in loc(s)$ и
+\begin{itemize}
+\item $op \neq tc_{child}$ и $s' = l_2$ (следующее состояние в ГПУ без учета семантики операции $op$), $g' = (l_2, op, \cdot$ - все операции в ГПУ, которые соответствуют заданной точке программы.
+\item $op=tc_{child}(l_\nu)$ и $l_2 = l_\nu$, $g' = (l_2, op, \cdot$ - все операции в ГПУ, которые соответствуют заданной точке программы.
+\end{itemize}
+\item $q = \varepsilon$, $s'=s$, $g' = (l_2, op, \cdot$ - все операции в ГПУ, которые соответствуют заданной точке программы.
 \end{itemize}
 
-Есть переход $\top \tat{\tau, g}_L (\top, \pi)$ для всех $g\in G$.
-
-$\forall l \in E_L: l \tat{\varepsilon, g}_T (l, \pi)$, так как 
-\begin{itemize}
-\item эффект окружения $\varepsilon$ не ограничивает переход,
-\item состояния {\em инвариантны к окружению}, то есть ни один поток не может изменить точку в программе, на которой находится другой поток.
-\end{itemize}
+Есть переход $\top \tatarrow_L (\top, \pi)$.
 
 Проверим условие~\ref{transfer_tm_ir_stronger_for_inner}.
 Возьмем случайное состояние $c \in \epp
@@ -2171,20 +2218,21 @@ t_{m+1}
 \end{pmatrix}$$.
 
 
-{\textbf 4.} Оператор слияния не объединяет элементы: $merge^E_L(e, e', \pi) = e$. Очевидно, он удовлетворяет условию~\ref{cpa_merge_tm_e_eq}, так как $e \sqsubseteq e$.
+\item Оператор слияния не объединяет элементы: $merge^E_L(e, e', \pi) = e$. Очевидно, он удовлетворяет условию~\ref{cpa_merge_tm_e_eq}, так как $e \sqsubseteq e$.
 
-{\textbf 5.} Оператор останова рассматривает состояния индивидуально: $stop^E_L(e, R, \pi) = (e \in R)$. Очевидно, он удовлетворяет условию~\ref{cpa_stop_tm_e_eq}, так как
+\item Оператор останова рассматривает состояния индивидуально: $stop^E_L(e, R, \pi) = (e \in R)$. Очевидно, он удовлетворяет условию~\ref{cpa_stop_tm_e_eq}, так как
 \begin{align}
 &\forall e \in E, R \subseteq E, \pi \in \Pi: \nonumber \\
 & (e \in R) \implies \forall \widehat{R} \subseteq E: \{e\} \cup \widehat{R} \subseteq R \cup \widehat{R} \implies \nonumber \\
 & \implies (eq.\ref{cpa_conc_eq_0}) \forall \widehat{R} \subseteq E: \conctm{\{e\}\cup \widehat{R}} \subseteq \conc{R' \cup \widehat{R}}
 \end{align}
 
-{\textbf 6.} Точность состояния никогда не изменяется: $prec^E_L(e, \pi, R) = (e, \pi)$.
+\item Точность состояния никогда не изменяется: $prec^E_L(e, \pi, R) = (e, \pi)$.
 Очевидно, он удовлетворяет условию~\ref{prec_tm_e_equation}, так как $e \sqsubseteq e$.
 
-{\textbf 7.} $compatible(l,\varepsilon) = true$.
+\item $compatible(l,\varepsilon) = true$.
 
+\end{enumerate}
 %----------------------------------------------------
 %----------------------------------------------------
 %----------------------------------------------------
