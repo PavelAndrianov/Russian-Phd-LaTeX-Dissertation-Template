@@ -577,7 +577,7 @@ $$Reach_{\tcarrow}(\conc{\{e_0\}}) \subseteq \conc{\overline{CPA}(\mathbb{D}, e_
 \newcommand{\conctm}[1]{\conc{#1}_{TM}}
 
 \section{Адаптивный статический анализ с раздельным рассмотрением потоков}
-\label{sect_tm_with_io}
+\label{sect_tm_cpa}
 
 \subsection{Основная идея}
 
@@ -1222,6 +1222,7 @@ t_n
 
 
 \subsection{Анализ, инвариантный к эффектам окружения}
+\label{sect_inv_analysis}
 
 Анализ $\mathbb{I}$ будем называть инвариантным к эффектам окружения, если $\forall e, e' \in E, R \subseteq E, \widehat{e} = apply_I(e, e'): \widehat{e} = \bot \lor \widehat{e} \tat{R} e$.
 То есть, никакие переходы, полученные применением эффектов окружения (проекций) не могут изменить текущего состояния (перехода). 
