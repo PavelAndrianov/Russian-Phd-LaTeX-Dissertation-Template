@@ -1845,6 +1845,7 @@ $composite_{\mathscr{C}}(e_1, e_2) = (composite_{\Delta_1}(e^1_1, e^1_2), \dots,
 $e|_{p\mathscr{C}} = (e_1|_{p\Delta_1}, \dots, e_n|_{p\Delta_n})$.
 
 \end{itemize}
+
 \section{Простой анализ потоков}
 \label{sect_thread_analysis}
 Определим анализ потоков, инвариантный к переходам по окружению, 
@@ -2910,6 +2911,165 @@ t_n
 Мы показали, что состояния останутся совместными, и осталось показать, что совместными останутся дуги, то есть, согласно~\ref{epp_split}, что $\forall g \in G: g \in \econc{g} \cap \econc{x \to e}$. 
 Очевидно, что $(\cdot, assign(x, e), \cdot) \in \econc{x \to e}$, и условие выполнено.
 Таким образом мы показали, что условие~\ref{cpa_transfer_inner_req} выполнено для анализа предикатов.
+
+\end{proof}
+
+\section{Анализ потоков с эффектами окружения}
+\label{sect_thread_analysis_ext}
+
+Определим анализ потоков с эффектами окружения, который будет более точным, чем описанный ранее в разделе~\ref{sect_thread_analysis}.
+Этот CPA будет строить полный граф вызовов потоков, что позволит более точно определять совместные состояния. 
+$\mathbb{T_1}=(D_{T_1},$ $\Pi_{T_1}, \tatarrow_{T_1},$ $merge_{T_1}, stop_{T_1},$ $prec_{T_1}, compatible_{T_1},$ $composite_{T_1},$ $\cdot|_p)$.
+Анализ потоков содержит те же ограничения, что и описанный ранее ThreadCPA.
+
+Воспользуемся общим видом анализа с явным видом переходов, описанном в подразделе~\ref{subsect_transitions}.
+
+\begin{itemize}
+
+\item Множество абстрактных состояний $E^S_T = T \times 2^T \cup \{\bot^E,\top^E\}$.
+
+
+ $\bot^E \sqsubseteq t \sqsubseteq^E \top^E$ и $t \neq t'$ $\Rightarrow$ $t \not\sqsubseteq^E t'$ для всех элементов $t, t'\in T$ 
+(что означает $\bot^E \sqcup^E t = t$, $\top^E \sqcup t = \top^E$, $t \sqcup^E t' = \top^E$ для всех элементов $t,t'\in T$, $t\neq t'$).
+
+В данном анализе требуется расширенный оператор проверки совместности:
+
+\begin{align*}
+& \forall t_0, \dots, t_j \in T: \\
+& check_C((s_0, t_0), \{(s_1, t_1),\dots, (s_n,t_n)\}) = \forall i \neq j: t_i \neq t_j \land s_i \sqsubseteq t_i
+\end{align*}
+
+Оператор композиции для состояний
+
+$\forall t_1, \dots, t_n \in T:$
+\begin{equation}
+\begin{aligned}
+& \epp^S_T
+\left(
+\begin{pmatrix}
+s_0 \\
+t_0 
+\end{pmatrix},
+\left\{
+\begin{pmatrix}
+s_1 \\
+t_1 
+\end{pmatrix},
+\dots ,
+\begin{pmatrix}
+s_n \\
+t_n 
+\end{pmatrix}
+\right\}
+\right) =  \\
+& \begin{cases}
+& \{c \in C \mid dom(c) = \{t_0, \dots, t_n\}\}, \\
+& \hspace{1cm} \mbox{если } check_C((s_0, t_0), \{(s_1, t_1),\dots, (s_n,t_n)\})\\
+& \emptyset \mbox{, иначе}
+\end{cases}
+\end{aligned}
+\end{equation}
+
+Такое определение оператора $\epp$ очевидно удовлетворяет условиям~\ref{cpa_tm_epp_split_req_1},~\ref{cpa_tm_epp_split_req_2}, так как, фактически, результат не зависит от состояний $s_i$, которые влияют только на оператор $check_C$.
+
+Множество абстрактных дуг содержит только тождественную дугу, которая не меняет абстрактное состояние, и верхний и нижний элементы решетки: $\mathcal{G} = \{\bot^T_T, \varepsilon, \top^T_T\}$.
+Оператор конкретизации для дуг является тривиальным: $\econc{\bot^T_T} = \emptyset$, $\econc{\varepsilon} = \econc{\top^T_T} = G$.
+
+\item Множество точности не используется и состоит из одного элемента: $\Pi_T = \{\{\emptyset\}\}$.
+
+\item Отношение переходов $\tatarrow_T$ определяет переход $e \tatarrow_T (e', \pi)$, $g=(\cdot,op,\cdot)$, если 
+\begin{itemize}
+\item $op\neq tc_{child}$ и $e' = (t, \top)$, то есть текущий поток не меняется.
+\item $op=tc_{child}(l_\nu)$, тогда $e' = (l_\nu, \top)$, то есть текущий поток становится равным созданному.
+\end{itemize}
+
+Переход $\top \tat{\tau, g}_T (\top, \pi)$ определен для всех $g\in G$, однако на практике переход будет усилен (определение~\ref{simple_strengthen_def}) в CompositeCPA.
+
+\item Оператор слияния не объединяет абстрактные состояния: $merge_T(e, e', \pi) = e'$. Условие~\ref{cpa_merge_eq} очевидно выполнено.
+
+\item Оператор останова для абстрактных переходов проверяет наличие абстрактного перехода во множестве достижимых состояний: $stop_T(e, R, \pi) = (e \in R)$.
+Проверим условие~\ref{cpa_stop_eq}.
+Возьмем $\widehat{R} \subseteq E_T: \conc{\widehat{R} \cup e}_{TM} \subseteq \conc{\widehat{R} \cup e \cup R}_{TM} = \conc{\widehat{R} \cup R}_{TM}$.
+
+\item Точность переходов никогда не меняется: $prec_T(e, \pi, R) = (e, \pi)$. Условие~\ref{cpa_prec_eq} выполнено, так как $e \sqsubseteq e$.
+
+\item $\forall e_1, e_2 \in E_T, e_i = (s_i, q_i):compatible_T(e_1,e_2) = s_1 \neq s_2$.
+
+\item Переходы являются {\em инвариантными к окружению}, то есть ни один поток не может изменить идентификатор другого потока.
+Это означает, что проекцией является тождественный переход:
+$(s, q)|_p = (s, \varepsilon)$.
+
+\item Оператор $compose$ является обычным~\ref{default_compatible_def}.
+\end{itemize}
+
+Теперь нужно доказать, что определенные таким образом операторы $transfer$ и $apply$ удовлетворяют условию~\ref{cpa_transfer_inner_req}.
+
+\begin{proof}
+Рассмотрим случайный конкретный переход:
+$$\tau \in  \epp_{T}
+\left(
+\begin{pmatrix}
+e_0 \\
+t_0 
+\end{pmatrix},
+\left\{
+\begin{pmatrix}
+e_1 \\
+t_1 
+\end{pmatrix},
+\dots ,
+\begin{pmatrix}
+e_m \\
+t_m 
+\end{pmatrix}
+\right\}
+\right)$$.
+
+Если $op \neq thread\_create$, по определению $transfer$ $e'_i = (s_i, \top^T_T)$, то есть состояние не изменяется, а переходы рассматриваются все возможные. 
+А значит, 
+$$\tau' \in  \epp_{T}
+\left(
+\begin{pmatrix}
+e'_0 \\
+t_0 
+\end{pmatrix},
+\left\{
+\begin{pmatrix}
+e'_1 \\
+t_1 
+\end{pmatrix},
+\dots ,
+\begin{pmatrix}
+e'_m \\
+t_m 
+\end{pmatrix}
+\right\}
+\right)$$
+
+Если $op = tc_{Child} \lor op = tc_{Parent}$ состояние меняется только у дочернего потока: $e_{m+1} = (l_{\nu}, \top^T_T)$.
+То есть, 
+$$\tau' \in  \epp_{T}
+\left(
+\begin{pmatrix}
+e'_k \\
+t_k 
+\end{pmatrix},
+\left\{
+\begin{pmatrix}
+e'_0 \\
+t_0 
+\end{pmatrix},
+\dots ,
+\begin{pmatrix}
+e'_m \\
+t_m 
+\end{pmatrix} ,
+\begin{pmatrix}
+e'_{m+1} \\
+l_{\nu} 
+\end{pmatrix}
+\right\}
+\right)$$
 
 \end{proof}
 
