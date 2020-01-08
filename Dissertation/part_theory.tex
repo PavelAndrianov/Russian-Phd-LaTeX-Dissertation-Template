@@ -4,20 +4,20 @@
 \label{chapter_theory}
 
 \section{Основные определения}
-В этом разделе представлены основные определения параллельной программы и достижимых конкретных состояний в программе.
+В этом разделе представлены основные определения параллельной программы и достижимых конкретных состояний.
 
 Будем рассматривать простой императивный язык программирования, в котором поддерживаются операторы присваивания (assignment), проверки условия (assumption), захват и освобождение примитивов синхронизации (acquire/release) и создание потоков (thread\_create)\footnote{Реализация основана на инструменте \cpachecker, который работает с программами на языке Си}.
 
 Параллельная программа представляется автоматом потока управления (англ. Control Flow Automaton, CFA), который состоит из множества вершин $L$  и множества соединяющих их ребер $G$ .
-Множество $L$ - это множество всех точек программы (англ. program location), множество $G \subseteq L \times Ops \times L$, где $Ops$ - это множество всех операций программы.
+Множество $L$ -- это множество всех точек программы (англ. program location), множество $G \subseteq L \times Ops \times L$, где $Ops$ -- это множество всех операций программы.
 Так, отдельная дуга $g \in G, g = (l_1, op, l_2)$ моделирует операцию $op$, которая выполняется в программе, когда управление переходит из точки $l_1$ в точку $l_2$.
 Операция создания нового потока создает новый поток с идентификатором из множества $T$ и новый поток начинает свое выполнение из некоторой точки программы из множества $L$.
 Множество всех переменных программы, которые встречаются в операциях $assignment$ и $assumption$ обозначается как $X$.
 Будем считать, что переменные принимают только значения лежащие в $\mathbb{Z}$.
-Подмножество $X$, которое содержит все локальные переменные программы, обозначается как $X^{local}$, а подмножество, содержащее все глобальные переменные, -  $X^{global}$. 
+Подмножество $X$, которое содержит все локальные переменные программы, обозначается как $X^{local}$, а подмножество, содержащее все глобальные переменные, --  $X^{global}$. 
 %(to simplify presentation all threads have the same set of local variables) 
 Операции захвата и освобождения примитивов синхронизации определены над множеством специальных переменных $S: S \cap X = \emptyset$.
-Далее мы будем называть примитив синхронизации, связанный с переменной $s \in S$ блокировкой $s$.
+Далее мы будем называть примитив синхронизации, связанный с переменной $s \in S$, блокировкой $s$.
 Переменные из множества $S$ принимают значения из $\mathcal{T}=T \cup \{\bot_T\}$.
 При этом, $s \mapsto t, t \in T$ означает, что блокировка $s$ захвачена потоком $t$, а $s \mapsto \bot_T$ означает, что эта блокировка не захвачена.
 
@@ -40,7 +40,7 @@
 Будем использовать обозначение $dom(c)$, как область значения локальных частей состояния, то есть $dom(c)=dom(c_{pc})=dom(c_l)$.
 
 Под отношением переходов, помеченным дугой $g$ будем понимать $\tc{g,t} \subseteq C \times G \times T \times C$, где дуга $g \in G$, а идентификатор потока $t \in T$.
-Переход  $c_1 \tc{g,t} c_2, c_1, c_2 \in C$ моделирует переход программы из состояния $c_1$ в состояние $c_2$ при выполнении потоком $t \in T$ операции на дуге $g \in G$.
+Переход  $c_1 \tc{g,t} c_2, (c_1, c_2 \in C$) моделирует переход программы из состояния $c_1$ в состояние $c_2$ при выполнении потоком $t \in T$ операции на дуге $g \in G$.
 Для полноты будем считать, что существует специальный $\varepsilon$-переход из каждого состояния в себя:
 $\forall c \in C, t \in T: c \tc{\varepsilon, t} c$.
 
@@ -62,8 +62,8 @@ $\tcarrow = \displaystyle\bigcup_{g \in G,t \in T} \tc{g,t}$.
 Будем обозначать $c \tc{g, t} c'$, если $(c, g, t, c') \in \tcarrow$, и
 $c \tc{g} c'$, если $\exists t\in T: c \tc{g,t} c'$, и 
 $c \tcarrow c'$, если $\exists g\in G: c \tc{g} c'$. 
-%A set $r \subseteq C$ is called region.
-%A concrete state $c_n$ is reachable from a region $r$, denoted by $c_n \in Reach_{\tcarrow}(r)$, if there exists a sequence of concrete states $\langle c_0, c_1, ..., c_n \rangle$ such that $c_0 \in r$ and $\forall i : 1 \leq i \leq n : c_{i-1} \tcarrow c_i$.
+%Подмножество $r \subseteq C$ is called region.
+Конкретное состояние $c_n$ будем называть \textit{достижимым} из некоторого подмножества $r \subseteq C$ и обозначать $c_n \in Reach_{\tcarrow}(r)$, если существует последовательность конкретных состояний $\langle c_0, c_1, ..., c_n \rangle$ такая, что $c_0 \in r$ и $\forall i : 1 \leq i \leq n : c_{i-1} \tcarrow c_i$.
 
 %define regular semantics
 Обозначим через $eval(c, t, expr)$ значение выражения $expr$ над переменными из $X^{local} \cup X^{global}$ и со значениями этих переменных из конкретного состояния $c \in C$ для потока с идентификатором $t \in T$. %TODO need more?
@@ -125,20 +125,20 @@ $c \tc{g, t} c'$, $c=(c_{pc}, c_l, c_g, c_s)$, $c'=(c'_{pc}, c'_l, c'_g, c'_s) \
 $c \tc{g, t} c'$, $c=(c_{pc}, c_l, c_g, c_s)$, $c'=(c'_{pc}, c'_l, c'_g, c'_s) \in C$ тогда и только тогда, когда 
 \begin{itemize}
 \item $dom(c)=dom(c')$ -- переход не меняет множество активных потоков;
-\item $c'_l(t)=c_l(t)$ -- переход не меняет значения локальных переменных;
+\item $c'_l=c_l$ -- переход не меняет значения локальных переменных;
 \item $c'_g = c_g$ -- переход не меняет значения глобальных переменных;
 \item $c_s(s)=t \land c_s'(s)=\bot_T \land \forall s'\in S: s'\neq s \Rightarrow c'_s(s')=c_s(s')$ -- никакие другие блокировки не меняют свое значение
 \end{itemize}
 
 %define thread_create
 \subsection{Создание потоков}
-Определим семантику $thread\_create(l_\nu)$ таким образом, чтобы текущий поток при выполнении этого оператора перешел в следующую точку программы после $thread\_create$, а новый поток создается с новым идентификатором $\nu \in T$, который добавляется в локальную часть состояния.
+Определим семантику $thread\_create(l_\nu)$ таким образом: текущий поток при выполнении этого оператора переходит в следующую точку программы после $thread\_create$, а новый поток создается с новым идентификатором $\nu \in T$, который добавляется в локальную часть состояния.
 Созданный поток начинает свое выполнение из точки программы $l_\nu \in L$.
 
 Заметим, что такое определение позволяет поддерживать анализ программ с неограниченным количеством потоков, так как $thread\_create$ может встречаться в цикле.
 
 Для дуги $g = (l, thread\_create(l_\nu), l')$ существует переход
-$c \tc{g, t} c'$, $c=(c_{pc}, c_l, c_g, c_s)$, $c'=(c'_{pc}, c'_l, c'_g, c'_s) \in C$, $\nu \in T$ тогда и только тогда
+$c \tc{g, t} c'$, $c=(c_{pc}, c_l, c_g, c_s)$, $c'=(c'_{pc}, c'_l, c'_g, c'_s) \in C$, $\nu \in T$ тогда и только тогда, когда
 \begin{itemize}
 \item $\nu \notin dom(c) \land dom(c') = dom(c) \cup \{ \nu\}$ -- поток с идентификатором $\nu$ добавляется во множество потоков;
 \item $c'_{pc}(t)=l'$ -- счетчик команд в родительском потоке переходит на следующую команду $l'$;
@@ -181,6 +181,8 @@ assert(variable == expression);
 Определим \textbf{состояние гонки} как конкретное состояние $c$ такое, что $\exists c_1, c_2 \in C$, $g_1, g_2 \in G$, $t_1, t_2 \in T$, $t_1 \neq t_2 : c \tc{g_1, t_1} c_1 \land c \tc{g_2, t_2} c_2$ и операции $g_1, g_2$ выполняются над одной и той же глобальной переменной $x \in X^{global}$ и хотя бы одна операция является присваиванием (то есть $assign(x, expr)$).
 \end{defn}
 
+Однако, на практике нас интересуют только состояния гонки, достижимые при реальном выполнении программы, то есть, $c_1, c_2 \in Reach(\{c_0\})$.
+
 %Note, that acquire/release operations are special ones and operate on lock variables only.
 
 
@@ -196,7 +198,6 @@ assert(variable == expression);
 Это является следствием того, что полное конкретное состояние может быть получено только из нескольких частичных состояний, описывающих потоки по-отдельности.
 
 Частичными также являются и абстрактные переходы.
-Поэтому анализ не может гарантировать, что 
 Поэтому анализ не может гарантировать, что последующие конкретные переходы будут достижимы за один шаг оператора transfer.
 В общем случае для этого может понадобиться $k$ шагов. Для подхода с отдельным анализом потоков $k=2$: анализ выполняет обычный переход в потоке, а затем распространяет его на все остальные потоки в качестве перехода в окружении. Это требует двух итераций алгоритма.
 
@@ -301,6 +302,7 @@ $Suc(R) = \bigcup_{e \in R}{Suc(e, R)}$.
 Таким образом, условие~\ref{cpa_transfer_eq} ослабляет требования на оператор $transfer$ по сравнению с классической теорией CPA.
 Оно означает, что анализ может получить все конкретные переходы не за один шаг абстрактного перехода, а после $k$ шагов.
 Для анализа каждого потока по-отдельности мы далее увидем, что $k=2$.
+При $k=1$ условие~\ref{cpa_transfer_eq} вырождается в классическое требование на оператор  $transfer$.
 
 %--------------------------------
 
@@ -342,7 +344,7 @@ $Suc(R) = \bigcup_{e \in R}{Suc(e, R)}$.
 В целом, множество точности $\Pi$, оператор останова $stop$, оператор объединения $merge$, оператор настройки точности $prec$ остаются такими же, как и в классической теории CPA.
 
 %end of CPA definition
-\section{Алгоритм с частичными состояниями}
+\section{Алгоритм вычисления достижимых переходов}
 
 Алгоритм~\ref{cpata_algorithm_ps} представляет основной алгоритм, который вычисляет множество достижимых абстрактных переходов.
 Он также не претерпел никаких изменений относительно классической теории CPA за исключением расширения оператора transfer.
@@ -361,9 +363,9 @@ $Suc(R) = \bigcup_{e \in R}{Suc(e, R)}$.
 
  \While{$waitlist \neq \emptyset$}{
   pop $(e, \pi)$ from $waitlist$\;  
-  \For{$e'$ in $(e, \pi) {\color{blue} \tat{reached}} e')$ }{
+  \For{$e'$ : $(e, \pi) {\color{blue} \tat{reached}} e'$ }{
    $(\widehat{e}, \widehat{\pi})=prec(e',\pi,reached)$\;
-   \For{each $(e'', \pi'') \in reached$}{
+   \For{$(e'', \pi'') \in reached$}{
     $e_{new} = merge(\widehat{e}, e'', \widehat{\pi})$\;
     \If{$e_{new} \neq e''$}{
      $waitlist := waitlist \setminus \{(e'',\pi'')\} \cup \{(e_{new},\pi'')\}$\;
@@ -390,188 +392,7 @@ $$\conc{CPA_{PS}(\mathbb{D}, e_0, \pi_0)} \supseteq Reach_{\tcarrow}(\conc{\{e_0
 
 \end{thrm}
 
-Доказательство состоит из двух частей. Сначала доказывается, что алгоритм~\ref{cpata_algorithm_ps_without_waitlist} без использов
-ания структуры waitlist аппроксимирует сверху множество достижимых конкретных состояний. Вторым шагом показывается, что алгоритм~\ref{cpata_algorithm_ps} эквивалентен алгоритму~\ref{cpata_algorithm_ps_without_waitlist}.
-
-\begin{algorithm}[H]
-% General Algorithm without waitlist
- \KwData{
- адаптивный статический анализ с частичными состояниями $\mathbb{D}$,
- {начальное абстрактное состояние $e_0$ с точностью $\pi_0 \in \Pi$},
- {множество $reached$ из элементов $E \times \Pi$}
- }
-\KwResult{множество достижимых абстрактных состояний $reached$}
- $reached := \{e_0,\pi_0\} $\;
- 
- \For{each $e \in reached$ }{
-  \For{each $e'$: $e \tat{reached} (e', \pi')$ }{
-   $(\widehat{e}, \widehat{\pi})=prec(e',\pi',reached)$\;
-   \For{each $(e'', \pi'') \in reached$}{
-    $e_{new} = merge(\widehat{e}, e'', \widehat{\pi})$\;
-    \If{$e_{new} \neq e''$}{
-     $reached := reached \setminus{\{(e'', \pi'')\}} \cup \{(e_{new}, \widehat{\pi})\}$\;
-    }
-   }
-   \If{$!stop(\widehat{e}, reached, \widehat{\pi})$}{
-    $reached := reached \cup \{(\widehat{e}, \widehat{\pi})\}$\;
-   }
-  }
- }%repeat
-
- \caption{$\overline{CPA}(\mathbb{D}, e_0, \pi_0)$}
- \label{cpata_algorithm_ps_without_waitlist}
-\end{algorithm}
-
-\begin{proof}
-Нужно доказать, что $\conc{\overline{CPA}(\mathbb{D}, e_0, \pi_0)} \supseteq Reach_{\tcarrow}(\conc{\{e_0\}})$.
-Определим рекурсивную функцию $\overline{CPA}_n(\mathbb{D}, e_0, \pi_0)$, которая будет вычислять множество достижимых состояний алгоритма на n-той итерации.
- Обозначим ее для краткости $reached_n \equiv \overline{CPA}_n(\mathbb{D}, e_0, \pi_0)$.
-
- \begin{equation}
- \label{cpa_recursive_algorithm}
- \begin{aligned}
- & reached_0 = \{e_0\} \\
- & s_n = \{e' \mid e \in reached_n \land e \tat{reached_n} e'\} \\
- & s'_n = \{\widehat{e} \mid \widehat{e} = prec(e',\pi',reached_n) \land e' \in s_n\} \\
- & \widehat{s}_n = \{\overline{e} \mid \exists e^1 \in reached_n, \widehat{e} \in s'_n \ldotp \overline{e} = merge(\widehat{e}, e^1, \pi))\} \\
- & \widehat{s}^1_n = reached_n \setminus \widehat{s}_n \\
- & \widehat{s}^2_n = \widehat{s}_n \setminus reached_n \\
- & \tilde{s}_n = \{e \mid e \in s' \land !(stop(e, reached_n, \pi))\} \\
- & reached_{n+1} = reached_n \setminus \widehat{s}^1_n \cup \widehat{s}^2_n \cup \tilde{s}_n = \widehat{s}_n \cup \tilde{s}_n\\
- \end{aligned}
- \end{equation}
-
-Покажем, что 
- \begin{equation}
- \label{algorithm_lemma_1}
- \begin{aligned}
- \conc{reached_{n+1} \cup \hat{R}} \supseteq \conc{Reach(reached_n) \cup \hat{R}} \end{aligned}
- \end{equation}
-
- \begin{align*}
- & \conc{reach_{n+1} \cup \hat{R}} = (def.) = \conc{reached_n \setminus \widehat{s}^1_n \cup \widehat{s}^2_n \cup \tilde{s}_n \cup \hat{R}} \supseteq \\
- & (eq.~\ref{cpa_conc_eq_2},\ref{cpa_merge_eq}) \supseteq \conc{reached_n  \cup \tilde{s}_n \cup \hat{R}}  
-  \supseteq (eq.~\ref{cpa_conc_eq_2},\ref{cpa_stop_eq})\\
-  & \supseteq \conc{reached_n  \cup s'_n \cup \hat{R}}  \supseteq (eq.~\ref{cpa_conc_eq_2},\ref{cpa_prec_eq}) \supseteq \conc{reached_n  \cup s_n \cup \hat{R}} =\\
-  &= (def.~\ref{reach_k}) = \conc{Reach(reached_n) \cup \hat{R}}
- \end{align*}
- 
- Теперь докажем по индукции, что 
- 
- \begin{equation}
- \label{algorithm_invariant_1}
- \begin{aligned}
- \forall \hat{R} \in E, k \in \mathbb{N}, \conc{reached_{n+k} \cup \hat{R}} \supseteq \conc{Reach^k(reached_n) \cup \hat{R}}
- \end{aligned}
- \end{equation}
- 
- При $k=0$ отношение тривиально: $\conc{reached_n \cup \hat{R}} \supseteq \conc{reached_n \cup \hat{R}}$.
- Пусть теперь инвариант~\ref{algorithm_invariant_1} выполнен при некотором $k$, рассмотрим его при $k+1$:
- \begin{align*}
- & \conc{reach_{n+k+1} \cup \hat{R}} \supseteq (eq.~\ref{algorithm_lemma_1}) \supseteq \conc{Reach(reached_{n+k}) \cup \hat{R}} = \\
- & = (def.) = \conc{reached_{n+k} \cup \{e' \mid e \tat{reached_{n+k}} e' \land e \in reached_{n+k}} \cup \hat{R}\} \\
- & \supseteq (eq.~\ref{algorithm_invariant_1}) \supseteq \conc{Reach^k(reached_n) \cup \\
- & \{e' \mid e \tat{reached_{n+k}} e' \land e \in reached_{n+k}\} \cup \hat{R}} \supseteq (eq.~\ref{eq_suc}) \\
- & \supseteq \conc{Reach^k(reached_n) \cup \{e' \mid e \tat{Reach^k(reached_n)} e' \land e \in Reach^k(reached_n)\} \\ 
- & \cup \hat{R}} = (def.~\ref{reach_k}) = \conc{Reach^{k+1}(reached_n) \cup \hat{R}}
- \end{align*}
-
-Таким образом, мы имеем,
-\begin{equation}
- \label{algorithm_invariant_2}
- \begin{aligned}
- \conc{reach_{n+k}} \supseteq \conc{Reach^k(reached_n)} \supseteq (eq.~\ref{cpa_transfer_eq}) \supseteq \bigcup_{\tau \in \conc{reached_n}}{\{\tau' \mid \tau \tcarrow \tau'\}}
- \end{aligned}
- \end{equation}
-
-
-Когда алгоритм заканчивает свое выполнение (доходит до неподвижной точки) $reached_n = reached_{n+1}$. 
-Обозначим финальное множество, как $Reached = lim_{n \rightarrow \infty}(reached_n)$.
-Нам остается доказать, что $\bigcup_{\tau \in \conc{Reached}}{\{\tau' \mid \tau \tcarrow \tau'\}} \supseteq Reach_{\tcarrow}(\conc{\{e_0\}})$.
-
-
-Покажем, что $\forall \{\tau_i\} \in \mathcal{T}: \tau_0 \in \conc{\{e_0\}} \land \forall 1 \leq k \leq N: \tau_{k} \tcarrow \tau_{k+1} \implies \forall 1 \leq k \leq N: \tau_k \in \conc{Reached}$ по индукции.
-Алгоритм~\ref{cpata_algorithm_ps_without_waitlist} не удаляет состояния, поэтому $e_0 \in Reached \lor e_0 \sqsubseteq e' \in Reached$.
-Таким образом, $ \tau_0 \in \conc{Reached}$, то есть, базис индукции выполнен.
-Предположим, что утверждение выполнено для некоторого $n \in \mathbb{N}$:
-
-\begin{align}
-& \forall 1 \leq k \leq n: \tau_k \in \conc{Reached} \nonumber \\ 
-& \forall \tau \in \conc{Reached}: \{\tau' \mid \tau \tcarrow \tau'\} \subseteq (eq.~\ref{cpa_transfer_eq}) \subseteq \conc{Reach^k(Reached)} = \\
-& = \conc{Reached} \implies \tau_{k+1} \in \{\tau' \mid \tau \tcarrow \tau'\} \subseteq \conc{Reached} \nonumber
-\end{align}
-
-Так, мы показали, что $\conc{\overline{CPA}(\mathbb{D}, e_0, \pi_0)} \supseteq Reach_{\tcarrow}(\conc{\{e_0\}})$.
-
-
-Теперь нам нужно показать, что алгоритм использующий очередь состояний ($waitlist$) эквивалентен алгоритму без нее, то есть, что $\forall e \in \overline{CPA}(\mathbb{D}, e_0, \pi_0) \exists e' \in CPA(\mathbb{D}, e_0, \pi_0): e \sqsubseteq e'$.
-
-Заметим, что итерации алгоритмов абсолютно одинаковые, поэтому изменения полученных состояний являются эквивалентными.
-Единственным отличием является то, что $CPA(\mathbb{D}, e_0, \pi_0)$ итерируется по очереди состояний, а $\overline{CPA}(\mathbb{D}, e_0, \pi_0)$ -- по всем возможным подмножествам R.
-Два алгоритма могут быть синхронизированы следующим образом: они начинают с одного и того же начального множества $reached$. 
-Каждая итерация алгоритма $CPA(\mathbb{D}, e_0, \pi_0)$ повторяется алгоритмом $\overline{CPA}(\mathbb{D}, e_0, \pi_0)$. 
-Так как они выполняют одинаковые действия и модифицируют множество $reached$ одинаково, получаемое множество $reached$ будет совпадать у обоих алгоритмов.
-Когда $CPA(\mathbb{D}, e_0, \pi_0)$ заканчивает выполнение, $\overline{CPA}(\mathbb{D}, e_0, \pi_0)$ продолжает выполнять все оставшиеся итерации.
-
-Теперь нужно показать, что рассмотренных итераций алгоритма $CPA(\mathbb{D}, e_0, \pi_0)$ будет достаточно для построения финального множества $reached$.
-
-По аналогии с предыдущим пунктом нам потребуется рекурсивное определение функций $reached_n$ и $waitlist_n$:
- \begin{equation}
- \label{cpa_recursive_algorithm_2}
- \begin{aligned}
- & reached_0 = \{e_0\} \\
- & waitlist_0 = \{e_0\} \\
- & e_n = get(waitlist_n) \text{ выдает первое состояние в очереди} \\
- & s_n = \{e'_n \mid e_n \tat{reached_n} e'_n\} \\
- & s'_n = \{\widehat{e}_n \mid \widehat{e}_n = prec(e'_n,\pi',reached_n) \land e'_n \in s_n\} \\
- & \widehat{s}_n = \{\overline{e_n} \mid \exists e^1_n \in reached_n, \widehat{e}_n \in s'_n \ldotp \overline{e_n} = merge(\widehat{e}_n, e^1_n, \pi))\} \\
- & \widehat{s}^1_n = reached_n \setminus \widehat{s}_n \\
- & \widehat{s}^2_n = \widehat{s}_n \setminus reached_n \\
- & \tilde{s}_n = \{e_n \mid e_n \in s'_n \land !(stop(e_n, reached_n, \pi))\} \\
- & reached_{n+1} = reached_n \setminus \widehat{s}^1_n \cup \widehat{s}^2_n \cup \tilde{s}_n = \widehat{s}_n \cup \tilde{s}_n\\
- & waitlist_{n+1} = waitlist_n \setminus \{e_n\} \setminus \widehat{s}^1_n \cup \widehat{s}^2_n \cup \tilde{s}_n
- \end{aligned}
- \end{equation}
-
-Докажем следующий инвариант для всех итераций алгоритмов.
-
-\begin{equation}
-\label{cpa_algorithm_equivalance_invariant}
-\begin{aligned}
-& \forall e \in reached_n: \\
-& e \in waitlist_n \lor (\forall \widehat{R} \subseteq E : \conc{\{e' \mid e \tat{reached_n} e'\} \cup reached_n \cup \widehat{R}} \subseteq \conc{reached_n \cup \widehat{R}}) 
-\end{aligned}
-\end{equation}
-
-Этот инвариант означает, что для любого перехода из $reached_n$ либо он находится в $waitlist_n$, либо все следующие переходы тоже находятся в $reached_n$, то есть в процессе анализа переходы не теряются.
-
-Докажем инвариант~\ref{cpa_algorithm_equivalance_invariant} по индукции.
-Для начального шага инвариант выполнен: $reached_0 = \{e_0\} \land waitlist_0 = \{e_0\} \implies e_0 \in waitlist_0$.
-Пусть теперь инвариант выполнен для некоторой итерации $k$. Рассмотрим следующую итерацию $k+1$ и возьмем случайный переход $e \in reached_{k+1}$.
-Возможны четыре варианта:
-
-\begin{enumerate}
-\item $e \in (reached_{k+1} \setminus reached_n) \setminus \{e_n\}$. Для этого состояния ничего не меняется, для него был выполнен инвариант на предыдущей итерации, и будет выполнен на этой.
-\item $e = e_k$. На прошлой итерации инвариант был выполнен, так как $e_k \in waitlist_k$, но $e_k \notin waitlist_{k+1}$.
-По определению $reached_{k+1} = reached_k \setminus \widehat{s}^1_k \cup \widehat{s}^2_k \cup \tilde{s}_k$ и $\conc{reached_{k+1} \cup \widehat{R}} = \conc{reached_k \setminus \widehat{s}^1_k \cup \widehat{s}^2_k \cup \tilde{s}_k \cup \widehat{R}} \supseteq (eq.~\ref{cpa_merge_eq}) \supseteq \conc{reached_k \cup \tilde{s}_k \cup \widehat{R}} \supseteq (eq.~\ref{cpa_stop_eq}) \supseteq \conc{reached_k \cup s'_k \cup \widehat{R}} \supseteq (eq.~\ref{cpa_prec_eq}) \supseteq \conc{reached_k \cup \{e' \mid e \tat{reached_k} e'\} \cup \widehat{R}}$. Откуда следует $\conc{\{e' \mid e \tat{reached_{k+1}} e'\} \cup reached_{k+1} \cup \widehat{R}} \subseteq \conc{reached_{k+1} \cup \widehat{R}})$.
-\item $e \in \widehat{s}^2_{k+1}$. По определению $waitlist_{k+1}$ это означает, что $\widehat{s}^2_{k+1} \subseteq waitlist_{k+1} \implies e \in waitlist_{k+1}$. А значит, инвариант выполнен.
-\item $e \in \tilde{s}_k$. Опять же, по определению $waitlist_{k+1}$ это означает, что $\tilde{s}_k \subseteq waitlist_{k+1} \implies e \in waitlist_{k+1}$. А значит, инвариант выполнен.
-\end{enumerate}
-
-Инвариант~\ref{cpa_algorithm_equivalance_invariant} выполнен на всех итерациях алгоритма $CPA(\mathbb{D}, e_0, \pi_0)$, включая последнюю, в которой $waitlist_k = \emptyset$, $reached_k = Reached$, поэтому $\conc{\{e' \mid e \tat{Reached} e'\} \cup Reached} \subseteq \conc{Reached}$.
-Отсюда следует, что все остальные операции алгоритма $\overline{CPA}(\mathbb{D}, e_0, \pi_0)$ являются бесполезными.
-Действительно, пусть $\overline{CPA}(\mathbb{D}, e_0, \pi_0)$ нашел переход $e \in Reached: e \tat{Reached} e' \land e' \notin Reached$.
-Используя инвариант мы получаем, что $\conc{\{e'\} \cup Reached} \subseteq \conc{Reached}$. 
-То есть, этот абстрактный переход не дает новых конкретных переходов.
-Отсюда следует, что
-
-$\conc{\overline{CPA}(\mathbb{D}, e_0, \pi_0)} \subseteq (req.~\ref{cpa_conc_eq_2}) \subseteq \conc{CPA(\mathbb{D}, e_0, \pi_0)}$
-
-Мы доказали следующее неравенство:
-
-$$Reach_{\tcarrow}(\conc{\{e_0\}}) \subseteq \conc{\overline{CPA}(\mathbb{D}, e_0, \pi_0)} \subseteq \conc{CPA(\mathbb{D}, e_0, \pi_0)}$$
-
-\end{proof}
+Доказательство теоремы~\ref{thrm_soundness} приведено в Приложении~\ref{sect_thrm_soundness_proof}.
 
 \newcommand{\IR}{IR}
 \newcommand{\conctm}[1]{\conc{#1}_{TM}}
@@ -586,17 +407,18 @@ $$Reach_{\tcarrow}(\conc{\{e_0\}}) \subseteq \conc{\overline{CPA}(\mathbb{D}, e_
 CPA, реализующий логику анализа с раздельным рассмотрением потоков, требует некоторые дополнительные возможности от вложенных CPA. 
 Поэтому прежде, чем формально описывать ThreadModularCPA, опишем расширенные требования ко вложенным CPA.
  
-Определение CPA, который может быть использован внутри анализа с раздельным рассмотрением потоков, расширяется доволнительным набором операторов: $\mathbb{I}=(D_{I},$ $\Pi_{I}, \tatarrow_{I},$ $merge_{I}, stop_{I},$ $prec_{I},$ $compatible_{I},$ $\cdot|_p$, $compose_I$).
+Определение CPA, который может быть использован внутри анализа с раздельным рассмотрением потоков, расширяется дополнительным набором операторов: $compatible_{I},$ $\cdot|_p$, $compose_I$.
+Таким образом, полный набор операторов для определения CPA теперь выглядит следующим образом: $\mathbb{I}=(D_{I},$ $\Pi_{I}, \tatarrow_{I},$ $merge_{I}, stop_{I},$ $prec_{I},$ $compatible_{I},$ $\cdot|_p$, $compose_I$).
 Кроме того, усиливаются требования к основным операторам.
 
 Абстрактный домен $D_I = (\mathcal{T}_I, \mathcal{E}_I, \epp_I)$ включает в себя множество конкретных переходов $\mathcal{T}_I$, полурешетку абстрактных переходов $\mathcal{E}_I$, а вместо функции конкретизации, в отличие от обычного CPA, используется оператор композиции $\epp_I$.
 Это необходимо из-за того, что для подхода с раздельным анализом потоков используется одна общая схема вычисления конкретных состояний, которая основана на этом операторе композиции. 
-Поэтому от вложенных CPA требуется только определить оператор композиции.
+Поэтому от вложенных CPA требуется только определить оператор композиции, который объединяет несколько частичных переходов во множество конкретных.
 
 Как было уже сказано, состояния и переходы являются частичными, поэтому они могут не соответствовать напрямую конкретным состояниям и переходам. Чтобы получить полный переход, нужно взять композицию множества частичных переходов, которые соответствуют всем доступным потокам. Совместные частичные переходы могут быть объединены в полный конкретный переход с помощью оператора композиции $\epp: E \times T \times 2^{E \times T} \to 2^{\mathcal{T}}$.
 Он возвращает множество конкретных переходов, которое соответствует данным частичным переходам.
 
-Основное требование к оператору $\epp_I$ должен соответствовать полурешетке. Так, если один из абстрактных переходов меньше, чем другой, то композиция с тем же множеством не должна получить большее множество конкретных переходов. 
+Основное требование к оператору $\epp_I$ состоит в том, что он должен соответствовать полурешетке. Так, если один из абстрактных переходов меньше, чем другой, то композиция с тем же множеством не должна получить большее множество конкретных переходов. 
 
 
 \begin{equation}
@@ -690,8 +512,11 @@ t_n
 \end{equation}
 
 Оператор проверки совместности $compatible_I: E \times E \rightarrow \{true, false\}$ проверяет, могут ли два частичных перехода начинаться из общего полного родительского состояния. 
+Этот оператор позволяет исключить из анализа те переходы, которые никак не могут выполняться параллельно друг с другом, а значит, и влиять друг на друга.
 
-Оператор проекции $\cdot|_p: E \rightarrow E$ проецирует переход в потоке на другой поток. Например, проекция может содержать модификации глобальных переменных, но опускать изменения локальных данных для потока.
+Оператор проекции $\cdot|_p: E \rightarrow E$ проецирует переход в потоке на окружение, то есть, оставляет только изменение глобального состояния программы. 
+При этом точность проекции зависит от точности анализа.
+Например, проекция может содержать конкретные присваиваемые значение глобальным переменным или лишь информацию, что некоторые глобальные переменные могли измениться неопределенным образом. 
 
 $compose_I: E \times E \rightarrow E$ объединяет два абстрактных перехода в один. Он применяет абстрактную дугу из одного перехода к абстрактному состоянию другого перехода. 
 
@@ -708,12 +533,12 @@ compose_{I}(e, e'|_p), &\mbox{ если } compatible_I(e, e'|_p) \\
 \end{aligned}
 \end{equation}
 
-Таким образом, оператор $apply$ означает, что переходы могут быть объединены только если они совместны. Результатом применения оператора является новый переход, который будем называть переходом в окружении, так как он представляет собой эффект окружения.
+Таким образом, оператор $apply$ означает, что переходы могут быть объединены, только если они совместны. Результатом применения оператора является новый переход, который будем называть переходом в окружении, так как он представляет собой эффект окружения.
 
 Оператор $apply$ связан с оператором $transfer_I$, поэтому отдельного условия на него нет.
 Тем не менее, в дальнейшем будет описано явное условие~\ref{cpa_transfer_tm_req}, связывающее операторы $apply$ и $transfer_I$.
 %Требование~\ref{cpa_transfer_tm_req} является более строгим и влечет за собой выполнение~\ref{cpa_transfer_eq}.
-Таким образом, CPA удовлетворяют общим условиям.
+%Таким образом, CPA удовлетворяют общим условиям.
 
 
 \subsection{Формальное описание ThreadModularCPA}
@@ -802,7 +627,7 @@ t_k
 \begin{array}{c}
 e_0, \dots,e_k \in \overline{R} \\
 t_0, \dots,t_k \in T
-\end{array}
+\end{array}}{
 \epp_I
 \left(
 \begin{pmatrix}
@@ -888,6 +713,7 @@ t_k
 \end{proof}
 
 \item Отношение переходов определяет следующие переходы, после чего применяет все достигнутые переходы, как переходы в окружении, к новым переходам, а новые переходы, как переходы в окружении, -- к уже достижимым.
+Отношение перехода $transfer$ представлено на алгоритме~\ref{cpata_transfer}.
 
 \begin{algorithm}
 % Thread-modular transfer 
@@ -958,7 +784,7 @@ t_n
 
 \begin{proof}
 Действительно, рассмотрим случайный переход $\tau \tcarrow \tau'$, $\tau \in \conc{R}$.
-Нужно показать, что $\exists k: tau' \in Reach^k(R)$.
+Нужно показать, что $\exists k: \tau' \in Reach^k(R)$.
 Так как $\tau \in \conc{R}$ по определению $\conc{R}$~\ref{cpa_conc_tm_def} это означает, что $\exists t, t_1, \dots, t_n \in T, t_i \neq t_j, e_0, e_1, \dots, e_n \in R:$\\
 $\tau \in \epp_I
 \left(
@@ -1004,16 +830,16 @@ t_n
 В этом случае, можно упростить описание этого анализа, используя явное разделение перехода на две части, каждая из которых отображается на свои подмножества конкретных элементов.
 В этом разделе опишем общие свойства для такого варианта CPA, чтобы в дальнейшем не повторять их для каждого варианта анализа.
 
-Итак, предположим, что полурешетка конкретных переходов $\mathcal{E}_I$ состоит из двух частей: $\mathcal{E}_I = \mathcal{E}^S_I \times \mathcal{E}^E_I$.
-Это означает, что множество элементов также состоит из двух частей $E_I = E^S_I \times E^E_I$, $\top_I = \{\top^S_I, \top^E_I\}$, $\bot_I = \{\bot^S_I, \bot^E_I\}$, а все операторы получаются такой же композицией:\\
+Итак, предположим, что полурешетка конкретных переходов $\mathcal{E}_I$ состоит из двух частей: $\mathcal{E}_I = \mathcal{E}^S_I \times \mathcal{E}^T_I$.
+Это означает, что множество элементов также состоит из двух частей $E_I = E^S_I \times E^T_I$, $\top_I = \{\top^S_I, \top^T_I\}$, $\bot_I = \{\bot^S_I, \bot^T_I\}$, а все операторы получаются такой же композицией:\\
 $\forall e, e' \in E_I, e = (s, q), e \sqsubseteq e' \iff (s \sqsubseteq s' \land q \sqsubseteq q')$, \\
 $\forall e_1, e_2, e \in E_I, e = (s, q), e = e_1 \sqcup e_2 \iff (s = s_1 \sqcup s_2 \land q = q_1 \sqcup q_2)$.
 
 Таким образом, имеют место две независимые решетки: над состояниями и над дугами.
 
 Кроме того, множество абстрактных дуг почти всегда включает в себя конкретные дуги $g \in G$. 
-То есть, $E^E_I = G \cup \mathcal{G}$, где $\mathcal{G}$ и есть множество абстрактных дуг (включая $\bot^E_I$).
-При этом, для абстрактных дуг можно представить аналог конкретизации для состояний: $||\cdot||_I : E^E_I \to 2^G$.
+То есть, $E^T_I = G \cup \mathcal{G}$, где $\mathcal{G}$ и есть множество абстрактных дуг (включая $\bot^T_I$).
+При этом, для абстрактных дуг можно представить аналог конкретизации для состояний: $||\cdot||_I : E^T_I \to 2^G$.
 Для корректности, должно быть обеспечены следующие условия:
 
 \begin{equation}
@@ -1200,7 +1026,7 @@ t_n
 \end{aligned}
 \end{equation}
 
-Представление~\ref{check_c_def} означает, что анализ не отслеживает соответствие состояний переходам. 
+Представление~\ref{default_check_c_def} означает, что анализ не отслеживает соответствие состояний переходам. 
 В этом случае, состояния должны быть совместными, а от абстрактных дуг требуется, чтобы переходы в окружении соответствовали исходному переходу в потоке. 
 
 Если переход разбивается на две части, то оператор $compose_I$ становится тривиальным:
@@ -1309,7 +1135,7 @@ t_k
 \{t_0 \to pc_0,\dots,t_j \to pc_j\},\\
 \{t_0\to l_0, \dots, t_j\to l_j\},\\
 \hat{gl}, \hat s \\
-g \in q_0
+g \in \econc{q_0}
 \end{array}
 \right.
 \right)\right\rbrace \\& \hspace*{1cm} \text{, if }check_C(\{e_0,\dots,e_j\}) \\
@@ -1326,42 +1152,20 @@ $e_1 \sqsubseteq^E_Q e_2 \iff e_1 = e_2$, а $e_1 \neq e_2 \iff e_1 \sqcup_Q e_2
 \item $\Pi_Q = \{\emptyset\}$ содержит один элемент, так как анализ не использует абстракцию.
 
 \item
-Отношение переходов $\tatarrow_Q$ содержит переход $e \tat{R}_Q (e', \pi)$, $e=(s, t, q)$ если
+Отношение переходов $\tatarrow_Q$ содержит переход $e \tat{R}_Q e'$, $e=(s, t, q)$ если
 \begin{itemize}
-\item $q \in G$ и есть переход на проекциях. Пусть
-$s=(t, pc, l, gl, cs)$ и есть
+\item $q \in G$. Пусть $s=(t, pc, l, gl, cs)$ и существует соответствующий переход на проекциях
 \begin{itemize}
 \item $(\{t\to pc\}, \{t\to l\}, gl, s) \tc{g,t} (\{t\to pc'\}, \{t\to l'\}, gl', cs'))$, где $g \ne thread\_create$, тогда 
 следующее состояние $s' = (t,pc',l', gl',cs')$.
 \item или в случае $q=thread\_create(pc_\nu)$, $\nu=pc_\nu$, \\
 $(\{t\to pc\}, \{t\to l\}, gl, cs) \tc{thread\_create(pc_\nu), t} (\{t\to pc', \nu \to pc_\nu\}, \{t\to l,\nu \to l\}, gl, cs))$, тогда 
-следующее состояние либо $e' = (t,pc',gl,s)$, либо $e' = (\nu,pc_\nu,gl,s)\}$ (новый поток).
+следующее состояние либо $s' = (t,pc',gl,s)$ (родительский поток), либо $s' = (\nu,pc_\nu,gl,s)\}$ (новый поток).
 \end{itemize}
-\item $q=(gl, cs, gl'',cs'') \in \mathcal{G}$, $s=(t, pc, l, gl, cs)$. Тогда следующее состояние $e'=(t, pc, l, gl'', cs'')$.
+\item $q=(gl, cs, gl'',cs'') \in \mathcal{G}$, $s=(t, pc, l, gl, cs)$. Тогда следующее состояние $s'=(t, pc, l, gl'', cs'')$.
 \end{itemize}
 
-Теперь нужно доказать условие~\ref{cpa_transfer_inner_req}, связывающее операторы $transfer$, $\epp$ и $apply$.
-\begin{proof}
-
-Рассмотрим случайный переход $\tau \tcarrow \tau'$, где $\tau=(c,t,g), \tau' = (c',t',g')$ и предположим, что 
-$\exists t_0, t_1, \dots, t_n \in T, t_i \neq t_j$ \\
-$\tau \in \epp_I((e_0,t_0), \{(e_1,t_1), \dots, (e_n, t_n)\})$.
-По определению~\ref{epp_tm_na} это означает, что $s_i = (t_i, c(t_i),c_l(t_i), c_g,c_s)$. 
-По определению $\tatarrow_Q$ существует состояние $s_0' = (t_0, c'(t_0),c_l'(t_0), c'_g,c'_s)$.
-% Кроме того, переход e'_0 может быть спроецирован: $e'_0|_p = e'_p = (s, t, (gl', s', gl'', s''))$.
-Так как $\{e_i\}$ были совместны  (оператор $check_C(\{e_0,\dots,e_n\})$, это означает, что все переходы в окружении соответствует переходу: $\forall 1 \le i \le n: q_i = (gl, s, gl', s')$.
-Таким образом, следующие состояния имеют вид $e_i \tatarrow e'_i$, $e'_i = (s'_i, t_i, q'_i)$, где $s'_i = (t_i, c(t_i),c_l(t_i), c'_g,c'_s)$.
-То есть, глобальные части других частичных состояний меняются в соответствии с переходом в основном потоке.
-При этом по определению $\tatarrow_Q$, который выдает все возможные переходы, $\exists 0 \le k \le n: g' = q'_k$, то есть новый переход в потоке должен содержатся среди полученных после переходов в окружении. 
-Зафиксируем это значение $k$ и рассмотрим проекцию этого нового перехода в потоке: $e'_k|_p = e'_p = (s'_k, t_k, (gl', s', gl'', cs'')) $.
-Глобальное часть состояний $s'_i$ была получена с помощью одинакового перехода, поэтому она удовлетворяет условию совместности $compatible_Q$. 
-Поэтому можно применить оператор $apply$ $\forall 0 \le i \le n, i \neq k: \tilde{e_i} = apply(e'_i, e'_p) = (s'_i, t_i, (gl', s', gl'', cs''))$.
-И тогда, состояния $e'_k, \tilde{e'_0}, \dots, \tilde{e'_{k-1}}, \tilde{e'_{k+1}}, \dots, \tilde{e'_n}$ удовлетворяют условию $check_C$. 
-А значит, могут быть объединены в глобальный переход оператором $\epp$, при этом $\tau'$ будет в этом множестве по его построению.
-
-В доказательстве опущен второй случай с операцией создания потока thread\_create. 
-Рассуждения полностью повторяют описанные выше с той лишь поправкой, что они проводятся для $n+1$ элемента.
-\end{proof}
+Доказательство условия~\ref{cpa_transfer_inner_req}, связывающее операторы $transfer$, $\epp$ и $apply$, приведено в приложении~\ref{sect_transfer_q_proof}.
 
 \item
 $merge_Q(e_1,e_2,R) = e_2$.
@@ -1391,14 +1195,15 @@ $compatible_Q(\tau, \tau') = (gl=gl' \land s=s')$
 \section{Композиция различных видов анализа}
 \label{sect_composite_analysis}
 
-Композиция различных типов анализа принципиально важна для объединения различных техник в одном алгоритме.
-Этот CPA содержит в себе различные внутренние CPA, в которых переходы выполняются параллельно.
+Композиция различных типов анализа принципиально важна для объединения различных техник анализа программы в одном алгоритме.
+CompositeCPA содержит в себе различные внутренние CPA, в которых переходы выполняются параллельно.
 Таким образом, вычисляется абстракция сразу для нескольких типов анализа, что позволяет значительно увеличить точность.
 
-Пусть есть несколько различных видов анализа с раздельным рассмотрением потоков: $\Delta_1, \dots, \Delta_n$. 
+Пусть имеется несколько различных видов анализа с раздельным рассмотрением потоков: $\Delta_1, \dots, \Delta_n$. 
 Композиция различных видов анализа может быть представлена, как отдельный анализ $\mathscr{C}=(D_{\mathscr{C}},$ $\Pi_{\mathscr{C}}, \tatarrow_{\mathscr{C}},$ $merge_{\mathscr{C}}, stop_{\mathscr{C}},$ $prec_{\mathscr{C}},$ $\cdot|_p$, $compose_{\mathscr{C}}$, $compatible_{\mathscr{C}}$).
 Каждый $\Delta_i$ реализует отдельный вид анализа. 
-$\Delta_i=(D_{\Delta_i},$ $\Pi_{\Delta_i}, \tatarrow_{\Delta_i},$ $merge^E_{\Delta_i}, stop^E_{\Delta_i},$ $prec^E_{\Delta_i},$ $\cdot|_{\Delta_i}$, $compose_{\Delta_i}$, $compatible_{\Delta_i}$)
+$\Delta_i=(D_{\Delta_i},$ $\Pi_{\Delta_i}, \tatarrow_{\Delta_i},$ $merge^E_{\Delta_i}, stop^E_{\Delta_i},$ $prec^E_{\Delta_i},$ $\cdot|_{\Delta_i}$, $compose_{\Delta_i}$, $compatible_{\Delta_i}$). 
+Тогда элементы $\mathscr{C}$ выражаются через элементы $\Delta_i$ следующим образом.
 
 \begin{itemize}
 
@@ -1424,8 +1229,8 @@ t_1
 \end{pmatrix},
 \dots ,
 \begin{pmatrix}
-e_n \\
-t_n 
+e_m \\
+t_m 
 \end{pmatrix}
 \right\}
 \right) = \\
@@ -1481,25 +1286,25 @@ t_m
 \end{enumerate}
 
 Для отношения переходов в композиции
-$e \tat{R}_{\mathscr{C}} (e',\pi')$, где $e = (e_1, \dots, e_n), e_i = (s_i, q_i), q_i \in G, q_i=(l,op,l')$.
+$e \tat{R}_{\mathscr{C}} e'$, где $e = (e_1, \dots, e_n), e_i = (s_i, q_i), q_i \in G, q_i=(l,op,l')$.
 
 \begin{itemize}
-\item если $op=thread\_create(l_\nu)$, то рассматриваются два перехода в родительском и в дочернем потоке
+\item если $op=thread\_create(l_\nu)$, то $\forall 0 \le j \le n$ рассматриваются два перехода в родительском и в дочернем потоке
 \begin{enumerate}
-\item $(s_j, (l, tc_{parent}, l')) \tat{R}_{\Delta_j} (e_j',\pi')$,
-\item $(s_j, (l, tc_{child}, l')) \tat{R}_{\Delta_j} (e_j',\pi')$.
+\item $(s_j, (l, tc_{parent}(l_\nu), l')) \tat{R}_{\Delta_j} (e_j',\pi')$,
+\item $(s_j, (l, tc_{child}(l_\nu), l')) \tat{R}_{\Delta_j} (e_j',\pi')$.
 \end{enumerate}
 \item иначе, $e_j \tat{R}_{\Delta_j} (e_j',\pi')$.
 \end{itemize}
 
 Комбинация полученных $e_j$ в один переход CompositeCPA напрямую $e' = (e_1', \dots, e_n')$ является корректным, однако недостаточно точным для использования на практике. 
 Один из внутренних CPA может получить более точную абстракцию, но за счет декартова произведения с другими анализами, он потеряет эту информацию. 
-В частности, это важно для определения следующей дуги. Один из внутренних CPA может определить, что следующий переход возможен только по одной-единственной дуге, а другой внутренний CPA, не имея этой информации, очертит более широкое реузльтирующее множество.
+В частности, это важно для определения следующей дуги. Один из внутренних CPA может определить, что следующий переход возможен только по одной-единственной дуге, а другой внутренний CPA, не имея этой информации, очертит более широкое результирующее множество возможных следующих дуг.
 В это ситуации было бы логичнее рассмотреть только одну дугу даже второму анализу.
 
 Для этого определяется оператор усиления: $\downarrow: E_{\Delta_1} \times \dots \times E_{\Delta_n} \rightarrow E_{\mathscr{C}}$.
 Как видно из определения, этот оператор зависит от конкретных видов анализа (CPA).
-Предполагая, что внутренние CPA, используют явнй вид переходов, описанный в~\ref{subsect_transitions}, опишем общий вид этого оператора для усиления информации о дугах.
+Предполагая, что внутренние CPA, используют явный вид переходов, описанный в~\ref{subsect_transitions}, опишем общий вид этого оператора для усиления информации о дугах.
 
 \begin{equation}
 \label{simple_strengthen_def}
@@ -1516,9 +1321,9 @@ $e \tat{R}_{\mathscr{C}} (e',\pi')$, где $e = (e_1, \dots, e_n), e_i = (s_i, 
 
 Такое определение является самым примитивным оператором $\downarrow$, так как оно не учитывает возможности усиления ни абстрактных состояний, ни абстрактных дуг.
 Такой оператор передает информацию другим операторам только о том, что существует единственная конкретная дуга, соответствующая абстрактным дугам всех внутренних CPA.
-Тем не менее, возможны другие, более интеллектуальные, реализации этого оператора.
+Тем не менее, возможны другие, более точные, реализации этого оператора.
 
-Таким образом, полученные выше $e_j'$ переходами внутренних CPA комбинируются в один переход CompositeCPA с помощью оператора $\downarrow$:
+Таким образом, полученные выше $e_j'$ переходы внутренних CPA комбинируются в один переход CompositeCPA с помощью оператора $\downarrow$:
 $e' = \downarrow(e'_1, \dots, e'_n)$.
 Для краткости далее будем обозначать $\downarrow(e'_1, \dots, e'_n) = \downarrow e'$.
 
@@ -1567,36 +1372,7 @@ t_n
 \end{aligned}
 \end{equation}
 
-Покажем, что требование~\ref{cpa_strengthen_req} выполнено для простого оператора $\downarrow$ (определение~\ref{simple_strengthen_def}).
-
-\begin{proof}
-Дакажем условие от противного.
-Предположим, что 
-\begin{align*}
-& \exists \tau \in \mathcal{T}, e_0, \dots, e_n \in E, t_0, \dots, t_n \in T : \\
-& \tau \in \epp_{\mathscr{C}}((e_0, t_0), \{(apply_{\mathscr{C}}(e_1, e_0), t_1), \dots, (apply_{\mathscr{C}}(e_n, e_0), t_n)\}) \\
-& \tau \notin \epp_{\mathscr{C}}((\downarrow e_0, t_0), \{(apply_{\mathscr{C}}(\downarrow e_1, \downarrow e_0), t_1), \dots, (apply_{\mathscr{C}}(\downarrow e_n, \downarrow e_0), t_n)\}) 
-\end{align*}
-По определению~\ref{composite_epp_def} это означает, что существует некоторый внутренний CPA, для которого 
-\begin{align*}
-& \exists \tau \in \mathcal{T}, e^i_0, \dots, e^i_n \in E_I, t_0, \dots, t_n \in T : \\
-& \tau \in \epp_{I}((e^i_0, t_0), \{(e^i_1, t_1), \dots, (e^i_n, t_n)\}) \\
-& \tau \notin \epp_{I}((\tilde{e}^i_0, t_0), \{(apply_{I}(\tilde{e}^i_1, \tilde{e}^i_0), t_1), \dots, ((apply_{I}(\tilde{e}^i_n, \tilde{e}^i_0), t_n)\}) 
-\end{align*}
-Где $\downarrow e_j = (\tilde{e}^1_j, \dots, \tilde{e}^m_j)$.
-
-Учитывая явный вид перехода $e=(s,q)$ и вид оператора $epp_I$(определение~\ref{epp_split}), а также то, что оператор усиления не меняет абстрактного состояния (определение~\ref{simple_strengthen_def}), получаем, что можно исключить из рассмотрения абстрактные состояния:
-\begin{align*}
-& \exists g \in G, e^i_0, \dots, e^i_n \in E_I, t_0, \dots, t_n \in T : \\
-& g \in \econc{q^i_0} \cap \econc{q^i_1} \cap \dots \cap \econc{q^i_n} \\
-& g \notin \econc{\tilde{q}^i_0} \cap \econc{\tilde{q}^i_1} \cap \dots \cap \econc{\tilde{q}^i_n} 
-\end{align*}
-
-Это означает, что $\exists 0 \le j \le n: q^i_j \neq \tilde{q}^i_j$. При этом не обязательно единственный.
-По определению~\ref{simple_strengthen_def} отсюда следует, что $\exists g' \in G, g \neq g': \exists 0 \le j \le n: \tilde{q}^i_j = g'$, так как только в этом случае дуга может измениться.
-Однако, по тому же определению~\ref{simple_strengthen_def} такое изменение возможно только если дуга $g'$ является единственно возможной, а значит, $\tau = (c, g', t)$, что противоречит условию $g' \neq g$. 
-А значит,предположение было неверно, и условие~\ref{cpa_strengthen_req} выполнено.
-\end{proof}
+Доказательство того, что требование~\ref{cpa_strengthen_req} выполнено для простого оператора $\downarrow$ (определение~\ref{simple_strengthen_def}), приведено в приложении~\ref{sect_composite_strengthen_proof}.
 
 Так как композитный анализ разбивает операцию $thread\_create$ на две дуги, требование~\ref{cpa_transfer_inner_req} трансформируется в
 
@@ -1684,119 +1460,6 @@ t_n
 %\end{aligned}
 %\end{equation}
 
-Теперь нужно показать, что требование~\ref{cpa_transfer_inner_req} выполнено для $\mathscr{C}$, если требование~\ref{cpa_transfer_composite_req} выполнены для всех его внутренних элементов. 
-
-\begin{proof}
-Рассмотрим случайный конкретный переход:
-$$\tau \in  \epp_{\mathscr{C}}
-\left(
-\begin{pmatrix}
-e_0 \\
-t_0 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\right\}
-\right)$$
-где $e_i=(e^1_i, \dots, e^n_i)$.
-
-По определению~\ref{composite_epp_def}, это означает что
-$$\forall j: 1\le j \le m: \tau \in  \epp_{\Delta_j}
-\left(
-\begin{pmatrix}
-e^j_0 \\
-t_0 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-e^j_1 \\
-t_1 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-e^j_m \\
-t_m 
-\end{pmatrix}
-\right\}
-\right)$$
-
-Возьмем случайный переход
-$ \tau \tcarrow \tau', \tau=(c,g,t), g \in G, t \in T, $ и покажем, что 
-$\exists e_0', \dots, e_m', \tilde{e}'_0, \dots, \tilde{e}'_{k-1}, \tilde{e}'_{k+1}, \dots, \tilde{e}'_m \in E$ и
-$\tau' \in  \epp_{\mathscr{C}}
-\left(
-\begin{pmatrix}
-e'_k \\
-t_k 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-\tilde{e'_0} \\
-t_0 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-\tilde{e'_m} \\
-t_m 
-\end{pmatrix}
-\right\}
-\right)$ 
-и при этом $\tilde{e}_0', \dots, \tilde{e}_m'$ будут получены из $e_0', \dots, e_m'$, а они -- из $e_0, \dots, e_m$ указанными в~\ref{cpa_transfer_inner_req} способами.
-
-%enumerate
-Сначала рассмотрим случай $g \neq thread\_create$
-
-Используя требование~\ref{cpa_transfer_composite_req} для внутренних элементов, получаем, что 
-\begin{align*}
-& \forall 0 \le j \le m: \exists {e^j_0}', {e^j_1}', \dots, {e^j_n}' \in E: \\
-& \forall 1 \leq i \leq n: e^j_i \tat{R} {e^j_i}': \exists 1 \le k \le n: t_k = t' \land \\
-& \tau' \in \epp_I(({e^j_k}', t_k), \{(\tilde{e^j_i}, t_i) \mid \tilde{e^j_i} = apply({e^j_i}', {e^j_k}') \land i \neq k)\})
-\end{align*}
-
-Заметим, что $k$ является одним и тем же для всех внутренних элементов, так как есть только одно $t_k = t'$, а множество $t_0, t_1, \dots, t_n$ -- общее для всех CPA.
-Поэтому можно объединить все внутренние переходы следующим способом:
-$ \forall 1 \le i \le n: e_i' = ({e^1_i}', \dots, {e^m_i}')$
-Таким образом, $\tau' \in \epp_{\mathscr{C}}((e_k', t_k), \{(\tilde{e_i}, t_i) \mid \tilde{e_i} = apply(e'_i, e'_k) \land i \neq k)\})$.
-По условию~\ref{cpa_strengthen_req} $\tau' \in \epp_{\mathscr{C}}((\downarrow e_k', t_k), \{(\tilde{e_i}, t_i) \mid \tilde{e_i} = apply(\downarrow  e'_i, \downarrow  e'_k) \land i \neq k)\})$.
-
-По определению $transfer$ в композитном анализе, получаем, что $\forall 1 \le i \le n: e_i \tatarrow \downarrow e_i'$, а по определению $apply$: $\forall 1 \le i \le n: \tilde{e_i} = apply(e_i', e_k') = (\tilde{e^0_i}, \dots, \tilde{e^m_i})$.
-А это означает, что выполнено условие~\ref{cpa_transfer_inner_req}.
-Это как раз то, что нам нужно было доказать. 
-
-Рассмотрим случай $g = thread\_create$.
-
-Используя требование~\ref{cpa_transfer_composite_req} для внутренних элементов, получаем, что 
-\begin{align*}
-& \exists e'_0, e'_1, \dots, e'_{n+1} \in E, \forall 0 \leq i \leq n: \\
-& \begin{cases}
-& (s_0, (l, tc_{parent}, l')) \tat{R} e'_0 \\
-& (s_0, (l, tc_{child}, l')) \tat{R} e'_{n+1} \\
-& e_i \tatarrow e'_i, \text{ если } i \neq 0
-\end{cases} \\
-& \exists 0 \le k \le n + 1:  t_k = t' \land\\
-& \tau' \in \epp_I((e_k', t_k), \{(\tilde{e}_i, t_i) \mid \tilde{e}_i = apply(e_i', e'_k) \land i \neq k)\}) 
-\end{align*}
-
-Заметим, что $k$ является одним и тем же для всех внутренних элементов, так как есть только одно $t_k = t'$, а множество $t_0, t_1, \dots, t_n$ -- общее для всех CPA.
-Поэтому можно объединить все внутренние переходы следующим способом:
-$ \forall 1 \le i \le n+1: e_i' = ({e^1_i}', \dots, {e^m_i}')$.
-Таким образом, $\tau' \in \epp_{\mathscr{C}}((e_k', t_k), \{(\tilde{e_i}, t_i) \mid \tilde{e_i} = apply(e'_i, e'_k) \land i \neq k)\})$.
-По условию~\ref{cpa_strengthen_req} $\tau' \in \epp_{\mathscr{C}}((\downarrow e_k', t_k), \{(\tilde{e_i}, t_i) \mid \tilde{e_i} = apply(\downarrow  e'_i, \downarrow  e'_k) \land i \neq k)\})$.
-
-По определению $transfer$ в композитном анализе, получаем, что $\forall 1 \le i \le n: e_i \tatarrow \downarrow e_i' \land e_0 \tatarrow \downarrow e'_{n+1}$, а по определению $apply$: $\forall 1 \le i \le n: \tilde{e_i} = apply(e_i', e_k') = (\tilde{e^0_i}, \dots, \tilde{e^m_i})$.
-А это означает, что выполнено условие~\ref{cpa_transfer_inner_req}.
-Это как раз то, что нам нужно было доказать. 
-\end{proof}
-
-\qedsymbol
 
 \item 
 Оператор слияния $merge$ может определяться различными способами, в зависимости от требований к анализу.
@@ -1824,8 +1487,12 @@ merge_{\mathscr{C}}(e_1,e_2,\pi) =
 В таком примере состояния объединяются только при совпадении (равенстве) состояний первого анализа ($i=1$).
 Очевидно, что такой вариант оператора $merge$ тоже удовлетворяет условию~\ref{cpa_merge_eq}, так как для $i = 1: e_2^1 \sqsubseteq e_2^1$.
 
+Стоит отметить, что такой способ слияния не равносилен первому варианту при некотором операторе $merge_{\Delta_1}$.
+При первом варианте, если хотя бы один анализ объединил свои состояния, возникнет новое состояние CompositeCPA. 
+Во втором варианте новое состояние возникнет только при некотором условии (в данном случае $e_1^1 = e_2^1$), что не может быть выражено в терминах операторов $merge_{\Delta_i}$ первого способа.
+
 \item 
-$stop_{\mathscr{C}}(e,R,\pi)=\forall j \mbox{ } stop_{\Delta_j}(e_j, R_j, \pi)$, где $R_j = \{e_j \mid e \in R \land e = (\dots, e_j, \dots)\}$
+$stop_{\mathscr{C}}(e,R,\pi)=\forall 0 \le j \le n: stop_{\Delta_j}(e_j, R_j, \pi)$, где $R_j = \{e_j \mid e \in R \land e = (\dots, e_j, \dots)\}$
 
 Проверим условие~\ref{cpa_stop_eq} для $\mathscr{C}$.
 По условию~\ref{cpa_stop_eq} для внутренних CPA выполнено $\forall 1 \le i \le n, \widehat{R_i} \subseteq E_i: \conc{\widehat{R_i} \cup \{e_i\}}_{TM} \subseteq \conc{R_i \cup \widehat{R_i}}_{TM}$.
@@ -1846,6 +1513,8 @@ $e|_{p\mathscr{C}} = (e_1|_{p\Delta_1}, \dots, e_n|_{p\Delta_n})$.
 
 \end{itemize}
 
+Доказательство того, что требование~\ref{cpa_transfer_inner_req} выполнено для $\mathscr{C}$, если требование~\ref{cpa_transfer_composite_req} выполнены для всех его внутренних элементов, приведено в приложении~\ref{sect_composite_transfer_proof}.
+
 \section{Простой анализ потоков}
 \label{sect_thread_analysis}
 Определим анализ потоков, инвариантный к переходам по окружению, 
@@ -1854,6 +1523,20 @@ $\mathbb{T}=(D_{T},$ $\Pi_{T}, \tatarrow_{T},$ $merge_{T}, stop_{T},$ $prec_{T},
 Анализ потоков содержит те же ограничения, что и анализ, представленный в статье~\cite{ThreadModular03}, и его применение ограничено на программы с ограниченным количеством создаваемых потоков.
 Предполагаем, что программа имеет ограниченное количество потоков, определяемые точками создания этих потоков, то есть $T\subseteq L$ и для $thread\_create(pc_\nu)$ всегда создается поток с идентификатором $pc_\nu$.
 Заметим, что остальные виды анализа не ограничены количеством создаваемых потоков.
+
+\begin{figure}[ht] 
+  \centering
+  \includegraphics [scale=0.6] {SimpleThreadCPA-img}
+  \caption{Иллюстрация состояний ThreadCPA}
+  \label{img:SimpleThreadCPA}
+\end{figure}
+
+На рисунке~\ref{img:SimpleThreadCPA} приведена иллюстрация работы анализа потоков.
+На нем изображен основной поток $t_0$, который создает два дополнительных в процессе своей работы: $t_1$ и $t_2$.
+Состояния ThreadCPA содержат только информацию о том потоке, которому принадлежит данное состояние.
+Состояния, принадлежащие разным потокам, являются совместными.
+Очевидно, такой способ является очень неточным, так как не позволяет отличить, например, состояния до и после создания потока.
+Более точные варианты анализа потока будут описаны далее, а пока формально дадим определение ThreadCPA.
 
 Воспользуемся общим видом анализа с явным видом переходов, описанном в подразделе~\ref{subsect_transitions}.
 
@@ -1869,11 +1552,11 @@ $\mathbb{T}=(D_{T},$ $\Pi_{T}, \tatarrow_{T},$ $merge_{T}, stop_{T},$ $prec_{T},
 & check_C((s_0, t_0), \{(s_1, t_1),\dots, (s_n,t_n)\}) = \forall i \neq j: t_i \neq t_j \land s_i \sqsubseteq t_i
 \end{align*}
 
-Оператор композиции для состояний
+Оператор композиции для состояний строит множество таких конкретных состояний, которые лишь содержат требуемые идентификаторы потока, не накладывая больше никаких ограничений.
 
-$\forall t_1, \dots, t_n \in T:$
 \begin{equation}
 \begin{aligned}
+& \forall t_1, \dots, t_n \in T: \\
 & \epp^S_T
 \left(
 \begin{pmatrix}
@@ -1900,7 +1583,7 @@ t_n
 \end{aligned}
 \end{equation}
 
-Такое определение оператора $\epp$ очевидно удовлетворяет условиям~\ref{cpa_tm_epp_split_req_1},~\ref{cpa_tm_epp_split_req_2}, так как, фактически, результат не зависит от состояний $s_i$, которые влияют только на оператор $check_C$.
+Такое определение оператора $\epp^S_T$ очевидно удовлетворяет условиям~\ref{cpa_tm_epp_split_req_1},~\ref{cpa_tm_epp_split_req_2}, так как, фактически, результат не зависит от состояний $s_i$, которые влияют только на оператор $check_C$.
 
 Множество абстрактных дуг содержит только тождественную дугу, которая не меняет абстрактное состояние, и верхний и нижний элементы решетки: $\mathcal{G} = \{\bot^T_T, \varepsilon, \top^T_T\}$.
 Оператор конкретизации для дуг является тривиальным: $\econc{\bot^T_T} = \emptyset$, $\econc{\varepsilon} = \econc{\top^T_T} = G$.
@@ -1932,76 +1615,240 @@ $(s, q)|_p = (s, \varepsilon)$.
 \item Оператор $compose$ является обычным~\ref{default_compatible_def}.
 \end{itemize}
 
-Теперь нужно доказать, что определенные таким образом операторы $transfer$ и $apply$ удовлетворяют условию~\ref{cpa_transfer_inner_req}.
+Доказательство того, что определенные таким образом операторы $transfer$ и $apply$ удовлетворяют условию~\ref{cpa_transfer_composite_req}, приведено в приложении~\ref{sect_transfer_thread_proof}. 
 
-\begin{proof}
-Рассмотрим случайный конкретный переход:
-$$\tau \in  \epp_{T}
+
+\section{Анализ потоков с эффектами окружения}
+\label{sect_thread_analysis_env}
+
+Определим анализ потоков с эффектами окружения.
+Этот CPA будет строить полный граф вызовов потоков, что позволит более точно определять совместные состояния, чем в описанном ранее простом анализе потоков (раздел~\ref{sect_thread_analysis}). 
+$\mathbb{T}_1=(D_{T_1},$ $\Pi_{T_1}, \tatarrow_{T_1},$ $merge_{T_1}, stop_{T_1},$ $prec_{T_1}, compatible_{T_1},$ $composite_{T_1},$ $\cdot|_p)$.
+Анализ потоков содержит те же ограничения, что и описанный ранее ThreadCPA.
+
+\begin{figure}[ht] 
+  \centering
+  \includegraphics [scale=0.6] {ThreadCPAEnv-img}
+  \caption{Иллюстрация состояний ThreadCPA}
+  \label{img:ThreadCPAEnv}
+\end{figure}
+
+На рисунке~\ref{img:ThreadCPAEnv} приведена иллюстрация работы анализа потоков с эффектами окружения.
+На нем изображен основной поток $t_0$, который создает два дополнительных в процессе своей работы: $t_1$ и $t_2$.
+Для данного варианта ThreadCPA абстрактные состояния содержат не только информацию о текущем потоке, но и обо всем множестве активных потоков.
+Состояния являются совместными только если они принадлежат разным потокам и их множество активных потоков совпадает.
+Такой вариант анализа потоков является более точным, чем предыдущий вариант, так как он позволяет отсеивать состояния до и после создания потока.
+Однако, информация обо всех потоках может быть получена только с помощью переходов в окружении.
+
+Перейдем к формальному описанию ThreadCPA.
+Для этого воспользуемся общим видом анализа с явным видом переходов, описанном в подразделе~\ref{subsect_transitions}.
+
+\begin{itemize}
+
+\item Множество абстрактных состояний $E^S_T = T \times 2^T \cup \{\bot^S_T,\top^S_T\}$.
+
+ $\bot^E \sqsubseteq s \sqsubseteq^E \top^E$ и $s \neq s' \Rightarrow s \not\sqsubseteq^S_T s'$ для всех элементов $s, s'\in E^S_T$ 
+(что означает $\bot^S_T \sqcup^S_T s = s$, $\top^S_T \sqcup t = \top^S_T$, $t \sqcup^S_T t' = \top^S_T$ для всех элементов $s,s'\in E^S_T$, $s\neq s'$).
+
+В данном анализе требуется расширенный оператор проверки совместности:
+
+\begin{align*}
+& \forall t_0, \dots, t_n \in T, s_i = (\tilde{t}_i, C_i): \\
+& check_C((s_0, t_0), \{(s_1, t_1),\dots, (s_n,t_n)\}) = \\
+& \forall 0 \le i \le n: C_i = \{t_0, \dots, t_n\} \land \tilde{t}_i = t_i
+\end{align*}
+
+Этот оператор проверяет, что все частичные состояния содержат одинаковое множество созданных потоков $C$, каждый поток $\tilde{t}_i$ является созданным с точки зрения других потоков и среди всех состояний ни одна пара не принадлежит одному и тому же потоку.
+
+Оператор композиции для состояний
+
+$\forall s_1, \dots, s_n \in T:$
+\begin{equation}
+\begin{aligned}
+& \epp^S_T
 \left(
 \begin{pmatrix}
-e_0 \\
+s_0 \\
 t_0 
 \end{pmatrix},
 \left\{
 \begin{pmatrix}
-e_1 \\
+s_1 \\
 t_1 
 \end{pmatrix},
 \dots ,
 \begin{pmatrix}
-e_m \\
-t_m 
+s_n \\
+t_n 
 \end{pmatrix}
 \right\}
-\right)$$.
+\right) =  \\
+& \begin{cases}
+& \{c \in C \mid dom(c) = \{t_0, \dots, t_n\} = C_i\}, \\
+& \hspace{1cm} \mbox{если } check_C((s_0, t_0), \{(s_1, t_1),\dots, (s_n,t_n)\})\\
+& \emptyset \mbox{, иначе}
+\end{cases}
+\end{aligned}
+\end{equation}
 
-Если $op \neq thread\_create$, по определению $transfer$ $e'_i = (s_i, \top^T_T)$, то есть состояние не изменяется, а переходы рассматриваются все возможные. 
-А значит, 
-$$\tau' \in  \epp_{T}
+Такое определение оператора $\epp$ очевидно удовлетворяет условиям~\ref{cpa_tm_epp_split_req_1},~\ref{cpa_tm_epp_split_req_2}, так как используется плоская решетка.
+
+Множество абстрактных дуг содержит тождественную дугу, которая не меняет абстрактное состояние, абстрактные дуги, соответсвующие созданию потока, а также верхний и нижний элементы решетки: $\mathcal{G} = \{\bot^T_T, \varepsilon, \top^T_T\} \cup \{create\} \times T$.
+Оператор конкретизации для дуг является тривиальным: $\econc{\bot^T_T} = \emptyset$,  $\econc{\top^T_T} = G $, $\econc{\varepsilon} =G \setminus \{thread_create(\cdot)\}$, $\econc{(create,t)} = thread_create(t)$.
+
+\item Множество точности не используется и состоит из одного элемента: $\Pi_T = \{\{\emptyset\}\}$.
+
+\item Отношение переходов $\tatarrow_T$ определяет переход $e \tatarrow_T (e', \pi)$, где $e=(s,q)$ и $e' = (s', \top)$, если 
+\begin{itemize}
+\item $q \in G, q =(\cdot, op, \cdot)$
+\begin{itemize}
+\item $op \neq tc_{child}$, $op \neq tc_{parent}$, $op \neq thread\_join$  и $s' = s$, то есть состояние не меняется.
+\item $op = tc_{parent}(l_\nu)$ $s' = (t, C \cup \{l_\nu\})$, то есть текущий поток не меняется, но новый поток добавляется во множество созданных потоков.
+\item $op = tc_{child}(l_\nu)$ $s' = (l_\nu, C \cup \{l_\nu\})$, то есть новый поток становится текущим в состоянии и добавляется во множество созданных потоков.
+% \item $op = thread\_join(l_\nu)$ $s' = (t, C \setminus \{l_\nu\})$, то есть текущий поток не меняется, но завершенный поток удаляется из множества созданных потоков.
+\end{itemize}
+\item $q=(create, t)$, тогда $s' = (t,  C \cup \{t\})$.
+% \item $q=(join, t)$, тогда $s' = (t,  C \setminus \{t\})$.
+\end{itemize}
+
+Переход $\top \tat{\tau, g}_T (\top, \pi)$ определен для всех $g\in G$, однако на практике переход будет усилен (определение~\ref{simple_strengthen_def}) в CompositeCPA.
+
+\item Оператор слияния не объединяет абстрактные состояния: $merge_T(e, e', \pi) = e'$. Условие~\ref{cpa_merge_eq} очевидно выполнено.
+
+\item Оператор останова для абстрактных переходов проверяет наличие абстрактного перехода во множестве достижимых состояний: $stop_T(e, R, \pi) = (e \in R)$.
+Проверим условие~\ref{cpa_stop_eq}.
+Возьмем $\widehat{R} \subseteq E_T: \conc{\widehat{R} \cup e}_{TM} \subseteq \conc{\widehat{R} \cup e \cup R}_{TM} = \conc{\widehat{R} \cup R}_{TM}$.
+
+\item Точность переходов никогда не меняется: $prec_T(e, \pi, R) = (e, \pi)$. Условие~\ref{cpa_prec_eq} выполнено, так как $e \sqsubseteq e$.
+
+\item $\forall e_1, e_2 \in E_T, e_i = (s_i, q_i), s_i = (t_i, C_i):compatible_T(e_1,e_2) = t_1 \in C_2 \land t_2 \in C_1  \land t_1 \neq t_2 \land C_1 = C_2$.
+
+\item Переходы являются {\em инвариантными к окружению}, то есть ни один поток не может изменить идентификатор другого потока.
+Это означает, что проекцией является тождественный переход:
+$(s, q)|_p = 
+\begin{cases}
+&(s, (create, t)) \mbox{, если} q \in G, q = (\cdot, tc_{child}(t), \cdot) \lor q = (\cdot, tc_{parent}(t), \cdot) \\
+% &(s, (join, t)) \mbox{, если} q \in G, q = (\cdot, thread_join(t), \cdot) \\
+&(s, \varepsilon) \mbox{, иначе} \\
+\end{cases}$.
+
+\item Оператор $compose$ является обычным~\ref{default_compatible_def}.
+\end{itemize}
+
+Доказательство того, что определенные таким образом операторы $transfer$ и $apply$ удовлетворяют условию, приведено в разделе Приложения~\ref{sect_transfer_thread_env_proof}. 
+
+
+\section{Расширенный анализ потоков, инвариантный к переходам в окружении}
+\label{sect_thread_analysis_ext}
+
+Определим анализ расширенный анализ потоков.
+Этот CPA будет строить некоторое множество создаваемых потоков таким образом, что позволит более точно определять совместные состояния, чем в описанном ранее простом анализе потоков (раздел~\ref{sect_thread_analysis}). 
+Однако, он не будет использовать переходы в окружении, что позволит ему оставаться инвариантным к переходам в окружении.
+$\mathbb{T}_2=(D_{T_2},$ $\Pi_{T_2}, \tatarrow_{T_2},$ $merge_{T_2}, stop_{T_2},$ $prec_{T_2}, compatible_{T_2},$ $composite_{T_2},$ $\cdot|_p)$.
+Анализ потоков содержит те же ограничения, что и описанный ранее ThreadCPA.
+
+\begin{figure}[ht] 
+  \centering
+  \includegraphics [scale=0.6] {ThreadCPAExt-img}
+  \caption{Иллюстрация состояний ThreadCPA}
+  \label{img:ThreadCPAExt}
+\end{figure}
+
+На рисунке~\ref{img:ThreadCPAExt} приведена иллюстрация работы анализа потоков с эффектами окружения.
+На нем изображен основной поток $t_0$, который создает два дополнительных в процессе своей работы: $t_1$ и $t_2$.
+Для данного варианта ThreadCPA абстрактные состояния содержат информацию о том, какие потоки были созданы на пути к этому состоянию. 
+Кроме того, хранится информация о том, находимся ли мы внутри созданного потока (C -- child), или остались внутри родительского (P -- parent).
+Несмотря на то, что множество созданных потоков может быть неполным (поток $t_1$ не имеет инвормации про поток $t_2$, так как был создан раньше), такой анализ позволяет  обеспечить такую же точность как и вариант с ThreadCPA с переходами в окружении.
+Основная идея проверки совместности состоит в том, что анализ, по сути, проверяет, может ли быть у двух абстрактных состояний одна общая точка ветвления (создание потока).
+В предположении, что начальный поток был строго один, это позволяет обеспечить требуемую точность.
+
+Перейдем к формальному описанию расширенного варианта ThreadCPA.
+Для этого воспользуемся общим видом анализа с явным видом переходов, описанном в подразделе~\ref{subsect_transitions}.
+
+\begin{itemize}
+
+\item Множество абстрактных состояний $E^S_T = 2^{T \times \{Parent, Child\}}$.
+
+$\bot^S_T=\emptyset$, $\top^S_T=T \times \{Parent, Child\}$.
+ $\forall s,s' \in E^S_T, s \sqsubseteq s' \iff s \subseteq s'$.
+ $\forall s,s' \in E^S_T, s \sqcup s' = s \cup s'$.
+
+В данном анализе требуется расширенный оператор проверки совместности:
+
+\begin{align*}
+& \forall t_0, \dots, t_n \in T, s_0, \dots, s_n \in E^S_T: \\
+& check_C((s_0, t_0), \{(s_1, t_1),\dots, (s_n,t_n)\}) = \\
+& \forall 0 \le i, j \le n: \\
+& \exists t \in T: (t, Parent) \in s_i \land (t, Child) \in s_j \lor (t, Parent) \in s_j \land (t, Child) \in s_i
+\end{align*}
+
+Оператор композиции для состояний
+
+$\forall s_1, \dots, s_n \in T:$
+\begin{equation}
+\begin{aligned}
+& \epp^S_T
 \left(
 \begin{pmatrix}
-e'_0 \\
+s_0 \\
 t_0 
 \end{pmatrix},
 \left\{
 \begin{pmatrix}
-e'_1 \\
+s_1 \\
 t_1 
 \end{pmatrix},
 \dots ,
 \begin{pmatrix}
-e'_m \\
-t_m 
+s_n \\
+t_n 
 \end{pmatrix}
 \right\}
-\right)$$
+\right) =  \\
+& \begin{cases}
+& \{c \in C \mid dom(c) = \{t_0, \dots, t_n\}\}, \\
+& \hspace{1cm} \mbox{если } check_C((s_0, t_0), \{(s_1, t_1),\dots, (s_n,t_n)\})\\
+& \emptyset \mbox{, иначе}
+\end{cases}
+\end{aligned}
+\end{equation}
 
-Если $op = tc_{Child} \lor op = tc_{Parent}$ состояние меняется только у дочернего потока: $e_{m+1} = (l_{\nu}, \top^T_T)$.
-То есть, 
-$$\tau' \in  \epp_{T}
-\left(
-\begin{pmatrix}
-e'_k \\
-t_k 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-e'_0 \\
-t_0 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-e'_m \\
-t_m 
-\end{pmatrix} ,
-\begin{pmatrix}
-e'_{m+1} \\
-l_{\nu} 
-\end{pmatrix}
-\right\}
-\right)$$
+Такое определение оператора $\epp$ очевидно удовлетворяет условиям~\ref{cpa_tm_epp_split_req_1},~\ref{cpa_tm_epp_split_req_2}, так как информация из состояния используется только для определения совместности.
 
-\end{proof}
+Множество абстрактных дуг содержит только тождественную дугу, которая не меняет абстрактное состояние, и верхний и нижний элементы решетки: $\mathcal{G} = \{\bot^T_T, \varepsilon, \top^T_T\}$.
+Оператор конкретизации для дуг является тривиальным: $\econc{\bot^T_T} = \emptyset$, $\econc{\varepsilon} = \econc{\top^T_T} = G$.
+
+\item Множество точности не используется и состоит из одного элемента: $\Pi_T = \{\{\emptyset\}\}$.
+
+\item Отношение переходов $\tatarrow_T$ определяет переход $e \tatarrow_T (e', \pi)$, $g=(\cdot,op,\cdot)$ и $e' = (s', \top)$, если 
+\begin{itemize}
+\item $op\neq tc_{child}$, $op\neq tc_{parent}$ и $s' = s$, то есть состояние не меняется.
+\item $op=tc_{child}(l_\nu)$, тогда $s' = s \cup (l_\nu, Child)$.
+\item $op=tc_{parent}(l_\nu)$, тогда $s' = s \cup (l_\nu, Parent)$.
+\end{itemize}
+
+Переход $\top \tat{\tau, g}_T (\top, \pi)$ определен для всех $g\in G$, однако на практике переход будет усилен (определение~\ref{simple_strengthen_def}) в CompositeCPA.
+
+\item Оператор слияния не объединяет абстрактные состояния: $merge_T(e, e', \pi) = e'$. Условие~\ref{cpa_merge_eq} очевидно выполнено.
+
+\item Оператор останова для абстрактных переходов проверяет наличие абстрактного перехода во множестве достижимых состояний: $stop_T(e, R, \pi) = (e \in R)$.
+Проверим условие~\ref{cpa_stop_eq}.
+Возьмем $\widehat{R} \subseteq E_T: \conc{\widehat{R} \cup e}_{TM} \subseteq \conc{\widehat{R} \cup e \cup R}_{TM} = \conc{\widehat{R} \cup R}_{TM}$.
+
+\item Точность переходов никогда не меняется: $prec_T(e, \pi, R) = (e, \pi)$. Условие~\ref{cpa_prec_eq} выполнено, так как $e \sqsubseteq e$.
+
+\item $\forall e_1, e_2 \in E_T, e_i = (s_i, q_i):compatible_T(e_1,e_2) = check_C(\{e_1, e_2\})$.
+
+\item Переходы являются {\em инвариантными к окружению}, то есть ни один поток не может изменить идентификатор другого потока.
+Это означает, что проекцией является тождественный переход:
+$(s, q)|_p = (s, \varepsilon)$.
+
+\item Оператор $compose$ является обычным~\ref{default_compatible_def}.
+\end{itemize}
+
+Доказательство того, что определенные таким образом операторы $transfer$ и $apply$ удовлетворяют условию~\ref{cpa_transfer_composite_req}, приведено в приложении~\ref{sect_transfer_thread_ext_proof}. 
+
+
 %----------------------------------------------------
 %----------------------------------------------------
 %----------------------------------------------------
@@ -2013,6 +1860,35 @@ $\mathbb{L}=(D_{L},$ $\Pi_{L}, \tatarrow_{L}, merge_{L}, stop_{L}, prec_{L},$ $c
 Классический вариант этого анализа описан в~\cite{Beyer08}.
 Расширим его компоненты для возможности его применения в анализе с раздельным рассмотрением потоков.
 
+\begin{figure}[h]
+\begin{minipage}[h]{0.3\textwidth}
+\begin{verbatim}
+  1: int main {
+  2:   int y = 3;
+  3:   int x = y + 1;
+  4:   ...
+  }
+\end{verbatim}
+\caption{Пример исходного кода}
+\label{LocationCodeExample}
+\end{minipage}
+\hfill
+\begin{minipage}{0.6\textwidth}
+    \center{\includegraphics[scale=0.8]{LocationCPA-img.pdf}}
+    \caption{Пример переходов LocationCPA}
+    \label{img:LocationCPA}
+\end{minipage}
+\end{figure}
+
+На рисунке~\ref{img:LocationCPA} представлен пример переходов для LocationCPA. 
+Переходы содержат в себе абстрактное состояние и абстрактную дугу.
+Абстрактное состояние обычно соответсвует узлу ГПУ, который можно условно считать соответсвующим строке исходного кода.
+Но в общем случае состояние LocationCPA может соответствовать некоторому множеству узлов ГПУ.
+Отличительной особенностью данного CPA является то, что именно он имеет полную информацию о возможных следующих дугах, поэтому при применении оператора $strengthen$ в CompositeCPA дуга LocationCPA будет браться за основу.
+С точки зрения подхода с раздельным рассмотрением потоков данный CPA не несет никакой нагрузки, так как переходы в различных потоках могут выполняться параллельно независимо от того, в какой точке программы находятся эти потоки.
+Таким образом, LocationCPA является важным служебным CPA, который обеспечивает обход ГПУ, но не влияет прямо на точность анализа.
+
+Теперь дадим формальное определение операторам LocationCPA.
 Воспользуемся общим видом анализа с явным видом переходов, описанном в подразделе~\ref{subsect_transitions}.
  
 \begin{enumerate}
@@ -2069,12 +1945,12 @@ Cостояния этого анализа {\em инвариантны к ок�
 
 \item Множество точности содержит только один элемент $\Pi_L = \{\{\emptyset\}\}$, так как не подразумевается применение абстракции.
 
-\item Отношение переходов $\tatarrow_L$ содержит переход $e \tatarrow_L (e', \pi)$, где $e = (s, q)$, если 
+\item Отношение переходов $\tatarrow_L$ содержит переход $e \tat{R}_L e'$, где $e = (s, q)$, если 
 \begin{itemize}
 \item $q \in G, q=(l_1,op,l_2)$, $l_1 \in loc(s)$ и
 \begin{itemize}
-\item $op \neq tc_{child}$ и $s' = l_2$ (следующее состояние в ГПУ без учета семантики операции $op$), $g' = (l_2, op, \cdot)$ - все операции в ГПУ, которые соответствуют заданной точке программы.
-\item $op=tc_{child}(l_\nu)$ и $l_2 = l_\nu$, $g' = (l_2, op, \cdot)$ - все операции в ГПУ, которые соответствуют заданной точке программы.
+\item $op \neq tc_{child}$ и $loc(s') = l_2$ (следующее состояние в ГПУ без учета семантики операции $op$), $g' = (l_2, op, \cdot)$ - все операции в ГПУ, которые соответствуют заданной точке программы.
+\item $op=tc_{child}(l_\nu)$ и $l_2 = l_\nu$, $g' = (l_\nu, op, \cdot)$ - все операции в ГПУ, которые соответствуют заданной точке программы.
 \end{itemize}
 \item $q = \varepsilon$, $s'=s$, $g' = (l_2, op, \cdot)$ - все операции в ГПУ, которые соответствуют заданной точке программы.
 \end{itemize}
@@ -2103,70 +1979,9 @@ $(s, q)|_p = (s, \varepsilon)$.
 
 \end{enumerate}
 
-Проверим условие~\ref{cpa_transfer_composite_req}.
+Доказательство того, что определенные таким образом операторы $transfer$ и $apply$ удовлетворяют условию~\ref{cpa_transfer_composite_req}, приведено в приложении~\ref{sect_transfer_location_proof}. 
 
-\begin{proof}
-Рассмотрим случайный конкретный переход $\tau \tcarrow \tau'$ и такие абстрактные переходы $e_0, \dots, e_n$, что :
-$$\tau \in \epp_{L}
-\left(
-\begin{pmatrix}
-e_0 \\
-t_0 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\right\}
-\right)$$.
 
-По определениям~\ref{epp_split},~\ref{location_epp_def} это означает, что $\tau = (c, g, t_0)$,  
-$$ c_{pc} = 
-\left\lbrace
-\begin{array}{c}
-t_0 \to l_0,\\
-\dots\\
-t_m \to l_m\\
-\end{array}
-\right\rbrace.$$
-где $e_i = (s_i, q_i)$, $l_i \in loc(s_i)$, $q_0 \in G$, $q_0 = (l_0, op, l_0')$.
-
-%TODO thread\_join
-Рассмотрим случай $g \neq thread\_create$. После перехода изменяется счетчик комманд только нулевого потока: $l_0' \in loc(s_0')$. $$ c'_{pc} = 
-\left\lbrace
-\begin{array}{c}
-t_0 \to l_0',\\
-\dots,\\
-t_m \to l_m\\
-\end{array}
-\right\rbrace.$$
-
-Это означает, что $$c' \in \epp^S_L 
-\begin{pmatrix}
-\begin{pmatrix}
-s_0 \\
-t_0 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-s_n \\
-t_n 
-\end{pmatrix}
-\end{pmatrix}$$
-
-Теперь рассмотрим поток $k$ в котором совершается переход $\tau' = (c', g', t_k)$. 
-По определению оператора $transfer$ $e_k \tatarrow e_k'$, $e_k' = (s_k', g_k)$, где $g_k$ -- включает в себя все дуги, по которым возможны переходы из данной точки программы, то есть и $g'$. 
-По определению $compatible$ полученные состояния будут совместны, а значит, можно будет применить оператор $apply$, то есть
-$\tau' \in \epp_I((e_k', t_k), \{(\tilde{e}_i, t_i) \mid \tilde{e}_i = apply(e_i', e'_k) \land i \neq k)\})$.
-
-Для случая $g = tc_{Child}(l_\nu)$ или $g = tc_{Parent}(l_\nu)$ доказательство принципиально ничем не отличается от предыдущего случая, так как никакой новой семантике в этих дугах нет. 
-\end{proof}
 %----------------------------------------------------
 %----------------------------------------------------
 %----------------------------------------------------
@@ -2178,6 +1993,34 @@ $\tau' \in \epp_I((e_k', t_k), \{(\tilde{e}_i, t_i) \mid \tilde{e}_i = apply(e_i
 Переходы анализа предикатов состоят из двух частей: абстрактного состояния и абстрактной дуги, которая может быть выражена либо обычной CFA дугой, либо логической формулой, кодирующей выполняемую операцию.
 Кроме того, локальные переменные в этих формулах должны быть переименованы для избежания коллизии имен для разных потоков.
 
+\begin{figure}[h]
+\begin{minipage}[h]{0.3\textwidth}
+\begin{verbatim}
+  1: int main {
+  2:   int y = 3;
+  3:   int x = y + 1;
+  4:   if (x > 0) {
+  5:    ...
+  6:  }
+  }
+\end{verbatim}
+\caption{Пример исходного кода}
+\label{PredicateCodeExample}
+\end{minipage}
+\hfill
+\begin{minipage}{0.65\textwidth}
+    \center{\includegraphics[scale=0.7]{PredicateCPA-img.pdf}}
+    \caption{Пример переходов PredicateCPA}
+    \label{img:PredicateCPA}
+\end{minipage}
+\end{figure}
+
+Рисунок~\ref{img:PredicateCPA} демонстрирует пример переходов анализа предикатов. 
+В абстрактном состоянии накапливается логическая формула на основе абстрактных дуг.
+Эти формулы проверяются на разрешимость, и если оказывается, что построенная формула неразрешима, это означает, что данное состояние недостижимо при реальном выполнении.
+Данный рисунок демонстрирует лишь общий вид анализа предикатов, и на нем не отображены переходы в окружении, построение предикатной абстракции и т.п.
+
+Перейдем к формальному описанию PredicateCPA.
 Пусть $\mathscr{P}$ -- это множество формул над переменными программы в теории без кванторов $\mathscr{T}$.
 Пусть $\mathcal{P} \subseteq \mathscr{P}$ -- это множество предикатов.
 Формула $\varphi$ является логической комбинацией предикатов из $\mathscr{P}$.
@@ -2236,8 +2079,8 @@ $\top^E = true$, а нижний элемент -- тождественно ло
 Оператор $C_{check}$ проверяет, имеют ли частичные состояния совместными, то есть, имеющими общую глобальную часть ($X^{global}$).
 Локальные переменные каждого состояния переименовываются, чтобы избежать путаницы с одинаковыми переменными разных потоков.
 
-Для совместных состояний $e_1, \dots, e_j \in E$ и для каждого решения 
-$v \models \theta_{X^{local},1}(e_1) \land \dots \land \theta_{X^{local},n}(e_n)$
+Для совместных состояний $s_1, \dots, s_n \in E^S_P$ и для каждого решения 
+$v \models \theta_{X^{local},1}(s_1) \land \dots \land \theta_{X^{local},n}(s_n)$
 можно определить функцию $\hat v_g = v_{\mid X^{global}}$, представляющую общую глобальную часть состояния и функции $\hat v_1=\theta_{X^{local},1}^{-1}(v)_{\mid X^{local}}, \dots, \hat v_n=\theta_{X^{local},n}^{-1}(v)_{\mid X^{local}}$, представляющие локальные части.
 
 Оператор композиции для состояний
@@ -2282,11 +2125,14 @@ c_g=\hat v_g
 
 Абстрактная дуга $q \in E^T_P$ – это действие, которое может быть выражено или формулой, или обычной CFA дугой: $E^T_P = G \cup \mathcal{G}$.
 Где $\mathcal{G}=E^S_P$, то есть эффект окружения - это логическая формула, описывающая изменение состояния.
-Однако, функция частичного порядка $\sqsubseteq^T_P$ определена совершенно по-другому: $\forall q_1, q_2 \in \mathcal{G}: q_1 \sqsubseteq^T_P q_2 = (\forall \varphi \in E^S_P, q_1 \land \varphi \implies q_2 \land \varphi$.
+Однако, функция частичного порядка $\sqsubseteq^T_P$ определена совершенно по-другому: $\forall q_1, q_2 \in \mathcal{G}: q_1 \sqsubseteq^T_P q_2 = (\forall \varphi \in E^S_P, q_1 \land \varphi \implies q_2 \land \varphi$).
+Дело в том, что тождественный эффект окружения $\varphi \equiv true$, который был бы верхним элементом в прежней решетке, означает, что никаких изменений глобальных переменных не произошло.
+Соответственно, верхним элементом решетки абстрактных дуг должен стать элемент, означающий, что изменились значения всех переменных неопределенным образом, то есть, после применения которого результирующая формула будет $\varphi' \equiv true$.
+Отсюда такая необходимость изменения функции частичного порядка.
 
 \item Множество точности $\Pi_P = 2^\mathscr{P}$ отвечает за точность абстрактного состояния и содержит в себе множество предикатов.
 
-\item Отношение переходов $e \tatarrow_P (e',\pi)$, $e = (s, g)$, $e' = (s', \top_P)$. 
+\item Отношение переходов $e \tat{R}_P e'$, $e = (s, g)$, $e' = (s', \top_P)$. 
 Так как анализ предикатов не отслеживает следующие релевантные дуги, он возвращает все возможные. 
 
 Для $g \in G$ существует переход c $g = (\cdot, op, \cdot)$, если $s' = SP_{op}(s)$.
@@ -2301,7 +2147,7 @@ $merge_{Join}$ объединяет обе части перехода:
 \label{predicate_merge_join_def}
 \begin{aligned}
 & \forall e, e' \in E, \pi \in \Pi_P, e =(s,g): \\
-& merge_{P}(e, e', \pi) = 
+& merge_{Join}(e, e', \pi) = 
 \begin{cases}
 & (s \lor s', g) \text{, if } g = g', g \in G \\
 & e' \text{, if } g \in G \land g' \in \mathscr{P} \lor g \in \mathscr{P} \land g' \in G \\
@@ -2334,7 +2180,7 @@ $merge_{Join}$ объединяет обе части перехода:
 \begin{equation}
 \label{cpa_predicate_compatible}
 \begin{aligned}
-& \forall e_1, e_2 \in E_P, e = (s, g) \\
+& \forall e_1, e_2 \in E_P, e = (s, q) \\
 & compatible_{P}(e_1, e_2) = \exists v: v \models s_1 \land s_2
 \end{aligned}
 \end{equation}
@@ -2343,10 +2189,10 @@ $merge_{Join}$ объединяет обе части перехода:
 
 \begin{equation}
 \begin{aligned}
-& \forall e \in E_P, e =(s,g): \\
+& \forall e \in E_P, e =(s,q): \\
 & e|_p = 
 \begin{cases}
-&e, \mbox{ if } g \notin G\\
+&e, \mbox{ if } q \notin G\\
 &(\theta_{X^{local},env}(s),\theta_{X^{local},env}(SP_{op}(true))), \mbox{ otherwise}
 \end{cases}
 \end{aligned}
@@ -2356,115 +2202,41 @@ $merge_{Join}$ объединяет обе части перехода:
 
 \end{enumerate}
 
-Покажем, что определение отношения переходов удовлетворяет условию~\ref{cpa_transfer_inner_req}. 
-
-\begin{proof}
-
-Рассмотрим случайное множество абстрактных переходов $e_0, e_1, \dots, e_n$ и конкретный переход $
-\tau \in \epp_P
-\left(
-\begin{pmatrix}
-e_0 \\
-t_0 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-e_n \\
-t_n 
-\end{pmatrix}
-\right\}
-\right)$
-
-Возьмем некоторый следующий переход $\tau \tcarrow \tau'$, где $\tau = (c, g, t_0)$
-Нам нужно показать, что 
-$\exists e_0', e_1', \dots, e_n' \in E_P$ и  $
-\tau' \in \epp_P
-\left(
-\begin{pmatrix}
-e_0 \\
-t_0 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-e_n \\
-t_n 
-\end{pmatrix}
-\right\}
-\right)$.
-
-Не будем подробно рассматривать случаи $g = thread\_create$
-%, $g = thread\_join$
-, так как этот переход не меняет состояния анализа предикатов и не меняет состояние памяти ($c_l$ и $c_g$).
-А значит, $s_i = s_i'$.
-Поэтому в этом случае $c' \in \epp^S_P
-\left(
-\begin{pmatrix}
-s_k' \\
-t_k 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-s_0' \\
-t_0 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-s_n' \\
-t_n 
-\end{pmatrix}
-\right\}
-\right) = 
-\epp^S_P
-\left(
-\begin{pmatrix}
-s_k \\
-t_k 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-s_0 \\
-t_0 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-s_n \\
-t_n 
-\end{pmatrix}
-\right\}
-\right)$.
-
-Рассмотрим теперь случай $op = assign(x, exp)$. Зафиксируем значение $k$ такое, что $t_k = t'$. Будем рассматривать переход в потоке из состояния $s_k$.
-
-$e_k \tatarrow e_k'$, $e_k'|_p = (\theta_{X^{local},env}(s_k'),\theta_{X^{local},env}(SP_{q'}(s_k'))$. 
-Начальные состояния $s_i$ были совместными, так как к ним был применим оператор $\epp$. 
-Отсюда следует, что существовала общая модель $\hat{v_g} \models s_i$.
-По определению оператора $assign$, который меняет только значение переменной $x$ на новое, $c_g' = \hat{v_g}'$, где $\hat{v_g}'$ совпадает с $\hat{v_g}$ для всех переменных, кроме $x$.
-По определению оператора перехода $s_k' = SP_{op}(s_k)$, а $s_i' = s_i'[x \rightarrow \hat x] \land SP_{op}(true) = SP_{op}(s_i)$.
-Таким образом, частичные состояния всех потоков меняются согласованно, и по определению $SP_{op}(\varphi)$ новое $\hat{v_g}'$ должно являться моделью для новых абстрактных состояний.
-Теперь необходимо проверить, что для новых переходов будет выполнен оператор $apply$, то есть, переходы будут совместны.
-Мы показали, что состояния останутся совместными, и осталось показать, что совместными останутся дуги, то есть, согласно~\ref{epp_split}, что $\forall g \in G: g \in \econc{g} \cap \econc{\theta_{X^{local},env}(SP_{g}(true))}$. 
-Очевидно, что $g \in \econc{\theta_{X^{local},env}(SP_{g}(true))}$, и условие выполнено.
-Таким образом мы показали, что условие~\ref{cpa_transfer_inner_req} выполнено для анализа предикатов.
-
-\end{proof}
+Доказательство того, что определение отношения переходов удовлетворяет условию~\ref{cpa_transfer_composite_req}, приведено в разделе Приложения~\ref{sect_transfer_predicate_proof}. 
 
 
 \section{Анализ примитивов синхронизации}
 \label{sect_lock_analysis}
 
 Определим анализ примитивов синхронизации (Lock Analysis) $\mathbb{S}=((D_{S},$ $\Pi_{S}, \tatarrow_{S},$ $merge_{S}, stop_{S},$ $prec^E_{S},$ $compatible_{S}$, $\cdot|_p$, $compose_S)$, который отслеживает множество захваченных блокировок (переменных синхронизации) для каждого потока. 
-При его описании снова воспользуемся явным видом перехода, описанным в разделе~\ref{subsect_transitions}.
 
+\begin{figure}[h]
+\begin{minipage}[h]{0.3\textwidth}
+\begin{verbatim}
+   int g = 0;
+   int main {
+     lock();
+     g = g + 1;
+     unlock();
+     ...
+  }
+\end{verbatim}
+\caption{Пример исходного кода}
+\label{LockCodeExample}
+\end{minipage}
+\hfill
+\begin{minipage}{0.6\textwidth}
+    \center{\includegraphics[scale=0.6]{LockCPA-img.pdf}}
+    \caption{Пример переходов LockCPA}
+    \label{img:LockCPA}
+\end{minipage}
+\end{figure}
+
+Рисунок~\ref{img:LockCPA} демонстрирует пример переходов анализа примитивов синхронизации.
+В абстрактном состоянии накапливается информация о захваченных блокировках. 
+
+Перейдем к формальному описанию LockCPA.
+Для этого снова воспользуемся явным видом перехода, описанным в разделе~\ref{subsect_transitions}.
 Он состоит из следующих компонент.
 
 \begin{enumerate}
@@ -2498,7 +2270,7 @@ t_n
 \right\}
 \right) = \\ 
 & = \begin{cases}
-& \{ c \in C \mid \hat s \in s_i \implies c_s(\hat s) = t_i \}  \mbox{, если } C_{Check}(s_0, \dots, s_n) \\
+& \{ c \in C \mid \hat s \in s_i \implies c_s(\hat s) = t_i \}  \mbox{, если } C_{Check}(\{s_0, \dots, s_n\}) \\
 & \emptyset \mbox{, иначе}
 \end{cases}
 \end{align*}
@@ -2511,12 +2283,18 @@ Cостояния этого анализа {\em инвариантны к ок�
 
 \item Множество точности содержит только один элемент $\Pi_S = \{\{\emptyset\}\}$, так как не подразумевается применение абстракции.
 
-\item Отношение переходов $\tatarrow_S$ содержит переход $s \tatarrow_S (s', \pi)$, с $g=(\cdot,op,\cdot')$ если 
+\item Отношение переходов $\tatarrow_S$ содержит переход $e \tat{R}_S e'$, $e = (s,q)$, $e' = (s', \top^T_S)$, если
+
+
+\begin{itemize}
+ \item $q \in G$, $q=(\cdot,op,\cdot')$ и 
 \begin{itemize}
 \item $op=acquire(\hat s)$ и $\hat s \notin s \land s' = s \cup \{\hat s\}$,
 \item $op=release(\hat s)$ и $s' = s \setminus \{\hat s\}$,
 \item $op=tc_{child}(l_\nu)$ и $s' = \emptyset$. 
 \item $op \neq acquire$ и $op \neq release$ и $op \neq tc_{child}$ и $s' = s$.
+\end{itemize}
+ \item $q = \varepsilon$ и $s' = s$.
 \end{itemize}
 
 \item Оператор слияния не объединяет абстрактные состояния: $merge_S(e, e', \pi) = e'$. Условие~\ref{cpa_merge_eq} очевидно выполнено.
@@ -2542,151 +2320,42 @@ Cостояния этого анализа {\em инвариантны к ок�
 $(s, q)|_p = (s, \varepsilon)$.
 \end{enumerate}
 
-
-Покажем, что выполнено условие~\ref{cpa_transfer_composite_req}. 
-\begin{proof}
-Рассмотрим случайное множество абстрактных переходов $e_0, e_1, \dots, e_n$ и конкретный переход $
-\tau \in \epp_S
-\left(
-\begin{pmatrix}
-e_0 \\
-t_0 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-e_n \\
-t_n 
-\end{pmatrix}
-\right\}
-\right)$
-
-Возьмем некоторый следующий переход $\tau \tcarrow \tau'$, где $\tau = (c, g, t_0)$
-Так как предикатный анализ выдает все возможные следующие дуги, достаточно показать, что 
-$\exists s_0', s_1', \dots, s_n' \in E^S_P$ и  $с' \in \epp^S_S
-\left(
-\begin{pmatrix}
-s_k' \\
-t_k 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-s_0' \\
-t_0 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-s_n' \\
-t_n 
-\end{pmatrix}
-\right\}
-\right)$.
-
-Не будем подробно рассматривать случаи $op = thread\_create$, $op = assign$, $op = assume$
-%, $g = thread\_join$
-, так как эти переходы не меняет состояния анализа примитивов синхронизации и не меняют состояние $c_s$.
-А значит, $s_i = s_i'$.
-Поэтому в этом случае $c' \in \epp^S_S
-\left(
-\begin{pmatrix}
-s_k' \\
-t_k 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-s_0' \\
-t_0 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-s_n' \\
-t_n 
-\end{pmatrix}
-\right\}
-\right) = 
-\epp^S_P
-\left(
-\begin{pmatrix}
-s_k \\
-t_k 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-s_0 \\
-t_0 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-s_n \\
-t_n 
-\end{pmatrix}
-\right\}
-\right)$.
-
-Рассмотрим теперь случай $op = acquire(\hat s)$. Зафиксируем значение $k$ такое, что $t_k = t'$. Будем рассматривать переход в потоке из состояния $s_k$.
-
-$c \tc{t, acquire(\hat s)} c'$, $s_k \tat{acquire(\hat s)} s_k'$, нужно показать, что 
-$c' \in \epp^S_P
-\left(
-\begin{pmatrix}
-s_k' \\
-t_k 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-s_0' \\
-t_0 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-s_n' \\
-t_n 
-\end{pmatrix}
-\right\}
-\right)$
-
-По определению отношения переходов $c_s'(\hat s) = t_k$, $s_k' = s_k \cup \{\hat s\}$.
-Заметим, что если переход есть на конкретных состояниях, это означает, что блокировка $\hat s$ не захвачена ни одним из потоков $t_1, \dots, t_n$.
-А это, в свою очередь, означает, что $s \notin s_i, 1 \le i \le n, i \neq k$.
-Таким образом, новое состояние $s_k'$ остается совместным с остальными частичными состояниями $s_i' = s_i, i \neq k$.
-По определению $\epp_S$
-\begin{align*}
-\epp^S_P
-\left(
-\begin{pmatrix}
-s_k' \\
-t_k 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-s_0' \\
-t_0 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-s_n' \\
-t_n 
-\end{pmatrix}
-\right\}
-\right) = \{ c \in C \mid \hat s \in s_i \implies c_s(\hat s) = t_i \} = C_0
-\end{align*}
-
-Очевидно, $c' \in C_0$.
-Аналогично можно проверить, что операция $g = release(\hat s)$ удовлетворяет условию~\ref{cpa_transfer_composite_req}. 
-
-\end{proof}
+Доказательство того, что определение отношения переходов удовлетворяет условию~\ref{cpa_transfer_composite_req}, приведено в разделе Приложения~\ref{sect_transfer_lock_proof}. 
 
 
 \section{Анализ явных значений}
 \label{sect_value_analysis}
 
-Определим анализ примитивов синхронизации (Value Analysis) $\mathbb{V}=((D_{V},$ $\Pi_{V}, \tatarrow_{V},$ $merge_{V}, stop_{V},$ $prec_{V},$ $compatible_{V}$, $\cdot|_p$, $compose_V)$, который отслеживает явные значения переменных.
-При его описании снова воспользуемся явным видом перехода, описанным в разделе~\ref{subsect_transitions}.
+Определим анализ явных значений (Value Analysis) $\mathbb{V}=((D_{V},$ $\Pi_{V}, \tatarrow_{V},$ $merge_{V}, stop_{V},$ $prec_{V},$ $compatible_{V}$, $\cdot|_p$, $compose_V)$, который отслеживает явные значения переменных.
+В отличие от анализа предикатов ValueCPA хранит только значения переменных, а значит, не может отлеживать более сложные зависимости между переменными. 
 
+\begin{figure}[h]
+\begin{minipage}[h]{0.3\textwidth}
+\begin{verbatim}
+  1: int main {
+  2:   int y = 3;
+  3:   int x = y + 1;
+  4:   if (x > 0) {
+  5:    ...
+  6:  }
+  }
+\end{verbatim}
+\caption{Пример исходного кода}
+\label{ValueCodeExample}
+\end{minipage}
+\hfill
+\begin{minipage}{0.65\textwidth}
+    \center{\includegraphics[scale=0.7]{ValueCPA-img.pdf}}
+    \caption{Пример переходов ValueCPA}
+    \label{img:ValueCPA}
+\end{minipage}
+\end{figure}
+
+Рисунок~\ref{img:LockCPA} демонстрирует пример переходов анализа явных значений.
+В абстрактном состоянии содержится отображение из переменных в их значения. 
+
+Перейдем к формальному описанию ValueCPA.
+Для этого снова воспользуемся явным видом перехода, описанным в разделе~\ref{subsect_transitions}.
 Он состоит из следующих компонент.
 
 \begin{enumerate}
@@ -2696,7 +2365,7 @@ $\forall s \in E^S_V, s: X \to \mathcal{Z}$, где $\mathcal{Z} = \mathbb{Z} \c
 Таким образом, множество абстрактных состояний $E^S_V$ является плоской решеткой над целыми числами.
 Верхний элемент решетки $\top^S_V = \{v \mid \forall x \in X: v(x) = \top_Z\}$ является отображением, в котором каждая переменная имеет любое значение.
 А нижний элемент решетки $\bot^S_V = \{v \mid \exists x \in X: v(x) = \bot_Z\}$ является отображением, в котором хотя бы одна переменная не может иметь никакого явного значения.
-Такое состояние является недостижимым при реальном выполнении программы. Порядок является тривиальным: любые два невырожденных состояния (неравные $\top^S_V$ или $\bot^S_V$ являются несравнимыми.
+Такое состояние является недостижимым при реальном выполнении программы. Порядок является тривиальным: любые два невырожденных состояния (неравные $\top^S_V$ или $\bot^S_V$) являются несравнимыми.
 
 Оператор $C_{Check}$ проверяет, существует ли общее отображение глобальных переменных:
 $\forall s_0, \dots, s_n \in E^S_V: C_{Check}(\{s_0, \dots, s_n\}) = \forall x \in X^g, \exists z \in \mathcal{Z}: \forall 0 \le i \le n: z = s_i(x) \lor s_i(x) = \top_Z$.
@@ -2723,7 +2392,8 @@ t_n
 \right\}
 \right) = \\ 
 & = \begin{cases}
-& \{ c \in C \mid \forall x \in X^g: \hat v_g(x) \neq \top_Z \implies c_g(x) = v_g(x) \}  \mbox{, если } C_{Check}(\{s_0, \dots, s_n\}) \\
+& \{ c \in C \mid \forall x \in X^g: \hat v_g(x) \neq \top_Z \implies c_g(x) = v_g(x) \} \\
+& \hspace{1cm}  \mbox{, если } C_{Check}(\{s_0, \dots, s_n\}) \\
 & \emptyset \mbox{, иначе}
 \end{cases}
 \end{align*}
@@ -2734,18 +2404,19 @@ t_n
 $E^T_V = 2^{X \to \mathcal{Z}} \cup G$.
 Тождественный переход $\varepsilon = \emptyset$ является пустым отображением, при котором ни одна переменная не меняет своего значения.
 Оператор конкретизации для дуг $\econc{\cdot}$ сопоставляет каждому отображению множество дуг, которое может иметь такое отображение.
-Например, $econc{x \to a} = \{g \mid g = (\cdot, assign(x, a), \cdot)\}$.
+Например, $\econc{x \to a} = \{g \mid g = (\cdot, assign(x, a), \cdot)\}$.
 
 \item Точность анализа явных значений определяется отслеживаемыми переменными, таким образом множество точности содержит подмножества из всех переменных программы:  $\Pi_V = 2^X$.
 
-\item Отношение переходов $\tatarrow_V$ содержит переход $e \tatarrow_V (e', \pi)$, с $e=(s,q)$ если 
+\item Отношение переходов $\tatarrow_V$ содержит переход $e \tat{R}_V e'$, с $e=(s,q)$, $e' =(s', \top^T_V)$, если 
 \begin{itemize}
 \item $q \in G, q=(\cdot,assume(expr),\cdot')$ 
 \begin{align*}
 &\forall x \in X: s'(x) = 
 \begin{cases}
 & \bot_Z \mbox{, если } \nexists a \in \mathbb{Z}. (x \rightarrow a) : (expr\neq 0)_{/s} \\
-& a \mbox{, если } \exists !a \in \mathbb{Z}. (x \rightarrow a) : (expr\neq 0)_{/s} \lor s(x) = c \\
+& a \mbox{, если } \exists !a \in \mathbb{Z}. (x \rightarrow a) : \\
+& \hspace{2cm} (expr\neq 0)_{/s} \lor s(x) = c \\
 & \top_Z{, иначе }
 \end{cases}
 \end{align*}
@@ -2765,7 +2436,7 @@ $E^T_V = 2^{X \to \mathcal{Z}} \cup G$.
 \begin{align*}
 &\forall x \in X: s'(x) = 
 \begin{cases}
-& g(x) \mbox{, если } x \in dom(g) \\
+& q(x) \mbox{, если } x \in dom(q) \\
 & s(x){, иначе }
 \end{cases}
 \end{align*}
@@ -2793,11 +2464,26 @@ $E^T_V = 2^{X \to \mathcal{Z}} \cup G$.
  Здесь отображение $s^{global}$ означает только ту часть, которая относится к глобальным переменным.
 \end{enumerate}
 
+Доказательство того, что определение отношения переходов удовлетворяет условию~\ref{cpa_transfer_composite_req}, приведено в разделе Приложения~\ref{sect_transfer_value_proof}. 
 
-Покажем, что выполнено условие~\ref{cpa_transfer_composite_req}. 
-\begin{proof}
-Рассмотрим случайное множество абстрактных переходов $e_0, e_1, \dots, e_n$ и конкретный переход $
-\tau \in \epp_V
+\section{Метод поиска состояния гонки}
+\label{sect_race_theory}
+
+Метод поиска состояния гонки заключается в построении множества достижимых абстрактных переходов с помощью алгоритма CPA~\ref{cpa_algorithm_ps}, а затем в поиске пары абстрактных переходов, начальные состояния которых являются совместными, а сами переходы производят доступ к разделяемой области памяти, при этом хотя бы один из доступов является записью.
+
+Построение множества достижимых состояний производится с помощью комбинации описаных ранее CPA.
+Возможны различные конфигурации, в зависимости от поставленной задачи, но, например, такая: анализ точек программы $\mathcal{L}$, анализ потоков $\mathbb{T}$, анализ примитивов синхронизации $\mathbb{S}$ и анализ предикатов $\mathbb{P}$. Все эти анализы объединяются с помощью композитного анализа $\mathbb{C}$. Кроме различного множества используемых CPA возможно более точная настройка каждого CPA в отдельности, например, изменением варианта оператора $merge$.
+
+Тем не менее, было показано, что операторы каждого из этих видов анализа удовлетворяют условиям~\ref{cpa_transfer_eq},~\ref{cpa_merge_eq},~\ref{cpa_stop_eq},~\ref{cpa_prec_eq}, а значит, позволяют утверждать по теореме~\ref{thrm_soundness}, что множество вычесленных абстрактных состояний аппроксимирует свержу множество конкретных состояний программы.
+Таким образом, если в числе абстрактных состояний программы присутствует ошибочное, значит, программа не соответствует поставленной спецификации.
+
+Покажем, что для программы, содержащей состояний гонки в смысле определения~\ref{raceDef}, будет найдено состояние гонки на абстрактных состояниях.
+Пусть у нас есть множество достижимых состояний $R: \exists c, c_1, c_2 \in \conc{R} \subseteq C, g_1, g_2 \in G, \widehat{t}, \overline{t} \in T, \widehat{t} \neq \overline{t}: c \tc{g_1, \widehat{t}} c_1, c \tc{g_2, \overline{t}} c_2$, то есть присустствует состояние гонки.
+По теореме~\ref{thrm_soundness} это означает, что 
+\begin{align*}
+& \exists e_0, e_1, \dots, e_n, \tilde{e}_0, \tilde{e}_1, \dots, \tilde{e}_n \in R, \\
+& t_0, \dots, t_n, \tilde{t_0}, \dots, \tilde{t}_n \in T, \\
+& \tau_1 \in \epp
 \left(
 \begin{pmatrix}
 e_0 \\
@@ -2814,1256 +2500,35 @@ e_n \\
 t_n 
 \end{pmatrix}
 \right\}
-\right)$
-
-Возьмем некоторый следующий переход $\tau \tcarrow \tau'$, где $\tau = (c, g, t_0)$
-Так как анализ явных значений выдает все возможные следующие дуги, достаточно показать, что 
-$\exists s_0', s_1', \dots, s_n' \in E^S_V$ и  $с' \in \epp^S_V
+\right), \\
+& \tau_1 \in \epp
 \left(
 \begin{pmatrix}
-s_k' \\
-t_k 
+\tilde{e}_0 \\
+\tilde{t}_0 
 \end{pmatrix},
 \left\{
 \begin{pmatrix}
-s_0' \\
-t_0 
+\tilde{e}_1 \\
+\tilde{t}_1 
 \end{pmatrix},
 \dots ,
 \begin{pmatrix}
-s_n' \\
-t_n 
+\tilde{e}_n \\
+\tilde{t}_n 
 \end{pmatrix}
 \right\}
-\right)$.
-
-Не будем подробно рассматривать случаи $op = thread\_create$, $op = acquire$, $op = release$
-%, $g = thread\_join$
-, так как эти переходы не меняет состояния анализа явных значений и не меняют состояние памяти $c_g$ и $c_l$.
-А значит, $s_i = s_i'$.
-Поэтому в этом случае $c' \in \epp^S_V
-\left(
-\begin{pmatrix}
-s_k' \\
-t_k 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-s_0' \\
-t_0 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-s_n' \\
-t_n 
-\end{pmatrix}
-\right\}
-\right) = 
-\epp^S_V
-\left(
-\begin{pmatrix}
-s_k \\
-t_k 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-s_0 \\
-t_0 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-s_n \\
-t_n 
-\end{pmatrix}
-\right\}
-\right)$.
-
-Рассмотрим теперь случай $op = assign(x, e)$. Зафиксируем значение $k$ такое, что $t_k = t'$. Будем рассматривать переход в потоке из состояния $s_k$.
-
-$c \tc{t, assign(x, e)} c'$, $s_k \tat{assign(x, e)} s_k'$, нужно показать, что 
-$c' \in \epp^S_V
-\left(
-\begin{pmatrix}
-s_k' \\
-t_k 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-s_0' \\
-t_0 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-s_n' \\
-t_n 
-\end{pmatrix}
-\right\}
-\right)$
-
-Начальные состояния $s_i$ были совместными, так как к ним был применим оператор $\epp$. 
-Отсюда следует, что существовала общая модель $\hat{v_g} \models s_i$.
-Заметим, что если переход есть на конкретных состояниях, это означает, что $c_g(x) = e_{/c}$, если $x \in X^{global}$ или $c_l(t_k)(x) = e_{/c}$, если $x \in X^{local}$.
-Рассмотрим присваивание, меняющее значение глобальной переменной, как наиболее сложный.
-По определению отношения переходов $s_k'(x) = e_{/s}$, а значения остальных переменных не изменяется.
-По определению перехода в окружении $s_i'(x) = q(x) = e$, а значения остальных переменных не изменяются.
-Таким образом, частичные состояния всех потоков меняются согласованно, и новое отображение $\hat{v_g}'$ должно являться моделью для новых абстрактных состояний, так как и состояния, и модель изменили только одно значение переменной $x$.
-Теперь необходимо проверить, что для новых переходов будет выполнен оператор $apply$, то есть, переходы будут совместны.
-Мы показали, что состояния останутся совместными, и осталось показать, что совместными останутся дуги, то есть, согласно~\ref{epp_split}, что $\forall g \in G: g \in \econc{g} \cap \econc{x \to e}$. 
-Очевидно, что $(\cdot, assign(x, e), \cdot) \in \econc{x \to e}$, и условие выполнено.
-Таким образом мы показали, что условие~\ref{cpa_transfer_inner_req} выполнено для анализа предикатов.
-
-\end{proof}
-
-\section{Анализ потоков с эффектами окружения}
-\label{sect_thread_analysis_ext}
-
-Определим анализ потоков с эффектами окружения, который будет более точным, чем описанный ранее в разделе~\ref{sect_thread_analysis}.
-Этот CPA будет строить полный граф вызовов потоков, что позволит более точно определять совместные состояния. 
-$\mathbb{T_1}=(D_{T_1},$ $\Pi_{T_1}, \tatarrow_{T_1},$ $merge_{T_1}, stop_{T_1},$ $prec_{T_1}, compatible_{T_1},$ $composite_{T_1},$ $\cdot|_p)$.
-Анализ потоков содержит те же ограничения, что и описанный ранее ThreadCPA.
-
-Воспользуемся общим видом анализа с явным видом переходов, описанном в подразделе~\ref{subsect_transitions}.
-
-\begin{itemize}
-
-\item Множество абстрактных состояний $E^S_T = T \times 2^T \cup \{\bot^E,\top^E\}$.
-
-
- $\bot^E \sqsubseteq t \sqsubseteq^E \top^E$ и $t \neq t'$ $\Rightarrow$ $t \not\sqsubseteq^E t'$ для всех элементов $t, t'\in T$ 
-(что означает $\bot^E \sqcup^E t = t$, $\top^E \sqcup t = \top^E$, $t \sqcup^E t' = \top^E$ для всех элементов $t,t'\in T$, $t\neq t'$).
-
-В данном анализе требуется расширенный оператор проверки совместности:
-
-\begin{align*}
-& \forall t_0, \dots, t_j \in T: \\
-& check_C((s_0, t_0), \{(s_1, t_1),\dots, (s_n,t_n)\}) = \forall i \neq j: t_i \neq t_j \land s_i \sqsubseteq t_i
+\right), \\
 \end{align*}
 
-Оператор композиции для состояний
-
-$\forall t_1, \dots, t_n \in T:$
-\begin{equation}
-\begin{aligned}
-& \epp^S_T
-\left(
-\begin{pmatrix}
-s_0 \\
-t_0 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-s_1 \\
-t_1 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-s_n \\
-t_n 
-\end{pmatrix}
-\right\}
-\right) =  \\
-& \begin{cases}
-& \{c \in C \mid dom(c) = \{t_0, \dots, t_n\}\}, \\
-& \hspace{1cm} \mbox{если } check_C((s_0, t_0), \{(s_1, t_1),\dots, (s_n,t_n)\})\\
-& \emptyset \mbox{, иначе}
-\end{cases}
-\end{aligned}
-\end{equation}
-
-Такое определение оператора $\epp$ очевидно удовлетворяет условиям~\ref{cpa_tm_epp_split_req_1},~\ref{cpa_tm_epp_split_req_2}, так как, фактически, результат не зависит от состояний $s_i$, которые влияют только на оператор $check_C$.
-
-Множество абстрактных дуг содержит только тождественную дугу, которая не меняет абстрактное состояние, и верхний и нижний элементы решетки: $\mathcal{G} = \{\bot^T_T, \varepsilon, \top^T_T\}$.
-Оператор конкретизации для дуг является тривиальным: $\econc{\bot^T_T} = \emptyset$, $\econc{\varepsilon} = \econc{\top^T_T} = G$.
-
-\item Множество точности не используется и состоит из одного элемента: $\Pi_T = \{\{\emptyset\}\}$.
-
-\item Отношение переходов $\tatarrow_T$ определяет переход $e \tatarrow_T (e', \pi)$, $g=(\cdot,op,\cdot)$, если 
-\begin{itemize}
-\item $op\neq tc_{child}$ и $e' = (t, \top)$, то есть текущий поток не меняется.
-\item $op=tc_{child}(l_\nu)$, тогда $e' = (l_\nu, \top)$, то есть текущий поток становится равным созданному.
-\end{itemize}
-
-Переход $\top \tat{\tau, g}_T (\top, \pi)$ определен для всех $g\in G$, однако на практике переход будет усилен (определение~\ref{simple_strengthen_def}) в CompositeCPA.
-
-\item Оператор слияния не объединяет абстрактные состояния: $merge_T(e, e', \pi) = e'$. Условие~\ref{cpa_merge_eq} очевидно выполнено.
-
-\item Оператор останова для абстрактных переходов проверяет наличие абстрактного перехода во множестве достижимых состояний: $stop_T(e, R, \pi) = (e \in R)$.
-Проверим условие~\ref{cpa_stop_eq}.
-Возьмем $\widehat{R} \subseteq E_T: \conc{\widehat{R} \cup e}_{TM} \subseteq \conc{\widehat{R} \cup e \cup R}_{TM} = \conc{\widehat{R} \cup R}_{TM}$.
-
-\item Точность переходов никогда не меняется: $prec_T(e, \pi, R) = (e, \pi)$. Условие~\ref{cpa_prec_eq} выполнено, так как $e \sqsubseteq e$.
-
-\item $\forall e_1, e_2 \in E_T, e_i = (s_i, q_i):compatible_T(e_1,e_2) = s_1 \neq s_2$.
-
-\item Переходы являются {\em инвариантными к окружению}, то есть ни один поток не может изменить идентификатор другого потока.
-Это означает, что проекцией является тождественный переход:
-$(s, q)|_p = (s, \varepsilon)$.
-
-\item Оператор $compose$ является обычным~\ref{default_compatible_def}.
-\end{itemize}
-
-Теперь нужно доказать, что определенные таким образом операторы $transfer$ и $apply$ удовлетворяют условию~\ref{cpa_transfer_inner_req}.
-
-\begin{proof}
-Рассмотрим случайный конкретный переход:
-$$\tau \in  \epp_{T}
-\left(
-\begin{pmatrix}
-e_0 \\
-t_0 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\right\}
-\right)$$.
-
-Если $op \neq thread\_create$, по определению $transfer$ $e'_i = (s_i, \top^T_T)$, то есть состояние не изменяется, а переходы рассматриваются все возможные. 
-А значит, 
-$$\tau' \in  \epp_{T}
-\left(
-\begin{pmatrix}
-e'_0 \\
-t_0 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-e'_1 \\
-t_1 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-e'_m \\
-t_m 
-\end{pmatrix}
-\right\}
-\right)$$
-
-Если $op = tc_{Child} \lor op = tc_{Parent}$ состояние меняется только у дочернего потока: $e_{m+1} = (l_{\nu}, \top^T_T)$.
-То есть, 
-$$\tau' \in  \epp_{T}
-\left(
-\begin{pmatrix}
-e'_k \\
-t_k 
-\end{pmatrix},
-\left\{
-\begin{pmatrix}
-e'_0 \\
-t_0 
-\end{pmatrix},
-\dots ,
-\begin{pmatrix}
-e'_m \\
-t_m 
-\end{pmatrix} ,
-\begin{pmatrix}
-e'_{m+1} \\
-l_{\nu} 
-\end{pmatrix}
-\right\}
-\right)$$
-
-\end{proof}
-
-\section{Расширенный анализ потоков}
-\label{sect_extended_thread_analysis}
-
-Определим анализ потоков
-$\mathbb{M}=(D_{M},$ $\Pi_{M}, \tatarrow_{M},$ $merge^E_{M}, stop^E_{M},$ $prec^E_{M},$ $compatible_{M})$, который отслеживает идентификаторы потоков.
-
-\textbf{Основные предположения } этого анализа следующие
-\begin{enumerate}
-\item 
-\begin{equation}
-\label{main_assumption_1}
-\begin{aligned}
-& \forall c \tat{t, g} c': g = thread\_exit() \\
-& \forall t_c \in T: (t_c, t) \notin c_m
-\end{aligned}
-\end{equation}
-\item 
-\begin{equation}
-\label{main_assumption_2}
-\begin{aligned}
-& \forall c \tat{t, g} c': g = thread\_create(var, num, l_{\nu}) \\
-& \forall n: c_t(var, n) \notin T \\
-\end{aligned}
-\end{equation}
-\item 
-\begin{equation}
-\label{main_assumption_4}
-\begin{aligned}
-& \mbox{Для любой программы существует }{TCT}_g \subseteq X_t \to X_t: \\ % here we strongly use 2.
-& \forall c,c'\in C, t\in T: c \tat{t, g} c': g = thread\_create(var, num, l_{\nu})\\
-& \forall v \in X_t, n \in \mathbb{N}: c_t(v, n) = t \implies TCT_g(var) = (v)\\
-& \mbox{Для создания потока в родительском потоке }t\mbox{ в } var \\
-& \mbox{ та же переменная содержится в }TCT_g
-\end{aligned}
-\end{equation}
-\end{enumerate}
-
-%The Thread Analysis inherits the limitations of~\cite{ThreadModular03} and restricted to the programs with bounded thread creation. We suppose that the program has finite number of threads identified by the locations where they are created, i.e $T\subseteq L$ and for $thread\_create(pc_\nu)$ we always create a thread with identifier $pc_\nu$. Note, that the other analyses are not bounded.
-
-{\textbf 1.} Абстрактный домен $D_M$ основан на плоской решетке для переменных потока $X_t$: 
-$D_M = (C, \mathcal{E}, \mathcal{I}, \epp)$, with $\mathcal{E}=(E_M, \top^E, \bot^E, \sqsubseteq^E, \sqcup^E)$, $E_M = X_t \times Paths \times Paths \{Alive, Dead\} \cup \{\bot^E,\top^E\}) $,
-где $Paths$ -- это множество всех возможных последовательностей $\{label_n\}^{\infty}_1$ и $label_n \in X_t \times \{Child, Parent\}$
-
-$e = (l, pSet, tSet, status)$. $l \in X_t$, $tSet, pSet \in Paths$, $status \in \{Alive, Dead\}$.
-$\bot^E \sqsubseteq \{(v, \cdot)\} \sqsubseteq^E \top^E$ и $v \neq v'$ $\Rightarrow$ $v \not\sqsubseteq^E v'$ для всех элементов $v, v'\in X_t$ 
-(откуда следует $\bot^E \sqcup^E \{(v, \cdot)\} = \{(v, \cdot)\}$, $\top^E \sqcup \{(v, \cdot)\} = \top^E$, $\{(v, \cdot)\} \sqcup^E \{(v', \cdot)\} = \top^E$ для всех элементов $v,v'\in X_t$, $v\neq v'$)
-
-\begin{itemize}
-\item $\forall e_1, \dots, e_m \in E$ обозначим
-\begin{equation}
-\label{tct}
-\begin{aligned}
-& TCT(\{e_1, \dots, e_m\}) = \\
-& \left\lbrace (v_j, v_i) \left|
-\begin{array}{c}
-\exists a > 0, 1 \le x \le m, 1 \le b \le m - a: \\
-(v_i, Child) = label_a \in tSet_x \land \\
-(v_j, \cdot) = label_{a+b} \in tSet_x \land \\
-\forall 1 \le c < b: status_{a+c} \neq Child
-\end{array}
-\right.
-\right\rbrace
-\end{aligned}
-\end{equation}
-
-\item $\forall e_1, \dots, e_m \in E:$
-\begin{equation}
-\label{compatible_E_thread_M}
-\begin{aligned}
-& compatible_{E}(\{e_1, \dots, e_m\}) = \\
-& \forall (v_i, v_j) \in TCT(\{e_1, \dots, e_m\}): \\
-& (v_i, v_k) \in TCT(\{e_1, \dots, e_m\}) \implies v_k = v_j \land \\
-& \forall i \neq j: compatible_{TM}(e_i, e_j) \land \\
-& \forall 1 \le i \le m: status_i = Dead \implies pSet_i = tSet_i \land \\
-& \forall 1 \le i \le m: (l_i, Child) \in pSet_i \land \\
-& \forall 1 \le i \le m, 0 \le x \le \infty, y > x: \\
-& (l_i, Child) = label_x \in tSet_i \implies \\
-& \forall label_y = (v_y, status_y) \in tSet_i \land status_y = Parent
-\end{aligned}
-\end{equation}
-
-Определение означает, что дерево создания потоков (ДСП) является одинаковым для каждого состояния, то есть, существует общий префикс и только один поток, в котором путь создания потоков разветвляется на два, а все остальные потоки, которые возникают после раветвления, являются уникальными.
-
-\item $\forall e_1, \dots, e_m \in E, \forall t_1, \dots, t_m \in T:$
-\begin{equation}
-\label{epp_thread_M}
-\begin{aligned}
-& \epp_{M}
-\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} = \\
-& = \begin{cases}
-& \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
-\left| 
-\begin{array}{c}
-e_i = (l_i, pSet_i, tSet_i, status_i) \\
-dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
-c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \mathbb{N} \\
-\forall i, j \in \overline{1..m}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
-c_m = \{ t_j \mapsto t_i \mid (l_j, l_i) \in TCT(\{e_1, \dots, e_m\}) \\
-\end{array}
-\right.
-\right\rbrace, \\
-& \mbox{if } compatible_{E}(e_1, \dots, e_m), t_i \neq t_j \\
-& \emptyset \mbox{ else}
-\end{cases}
-\end{aligned}
-\end{equation}
-
-\item $\mathcal{I}=\mathcal{E}$. 
-\end{itemize}
-
-{\textbf 2.} Множество точности содержит только один пустой элемент.
-
-{\textbf 3.} Отношение переходов $\tatarrow_F$ содержит переход $e \tat{\tau, g}_F (e', \pi)$, $g=(\cdot,op,\cdot)$, $e = (l, pSet, tSet, rSet, status), e' = (l', pSet', tSet', rSet', status')$ и $e \tat{\tau}_F (i, \pi)$, если $status = Alive$ и $i = e$ и если
-\begin{itemize}
-\item $op \neq tc_{parent}$, $op \neq tc_{child}$, $op \neq thread\_exit$ и $op \neq thread\_join$, $e' = e$.
-\item $op=tc_{child}(var, l_\nu)$, $l' = var$. $tSet' = tSet \cup (var, Child)$, $pSet' = tSet'$ .
-\item $op=tc_{parent}(var, l_\nu)$, $l' = l$. $tSet' = tSet \cup (var, Parent)$, $pSet' = pSet$.
-\item $op=thread\_exit$, $l' = l$, $tSet = pSet$, $tSet' = tSet$, $status' = \{Dead\}$.
-\item $op=thread\_join(var)$, $e' = e \setminus (var, Parent)$ -- это и есть абстракция: анализ не знает, завершен ли соответствующий поток или нет. Поэтому переход всегда выполняется.
-\end{itemize}
-
-Покажем, что требование ~\ref{transfer_tm_ir_stronger_for_inner} выполнено.
-
-Рассмотрм случайное состояние $c_0 \in C: \exists m \in \mathbb{N}, e_1, \dots, e_m \in E_M, t_1, \dots, t_m \in T: c_0 \in \epp_M
-\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix}$
-и случайный переход $c_0 \tc{g,t} c'$.
-
-Так как $c_0 \in \epp_M
-\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix}$ и $c_0 \tc{t} c'$, поэтому $t \in dom(c_0)$, откуда следует $\exists k: t_k = t$. 
-Зафиксируем это значение $k$, тогда $\tau$-переход выполняется из соответствующего $e_k$.
-В соответствии с определением $\epp$~\ref{epp_thread_M}, зафиксируем подмножество $\widehat{\mathbb{N}} \subseteq \mathbb{N}$, такое что $\widehat{\mathbb{N}}=\{num \mid (\cdot, num) \in c^0_l\}$
-
-По определению отношения переходов 3 имеется $e_k \tat{\tau} i_q=e_k$, $\forall q: 1 \le q \le m$. Возьмем $i_q=e_k$.
-
-Замети, что по определению~\ref{epp_thread_M} $\forall q: 1 \le q \le m \land q \neq k: compatible(e_q, e_k)$ и определению отношения переходов 3 следует $e_q \tat{i_q} e_q$. 
-Поэтому переход по эффекту окружения может быть применен, но он не изменит состояния.
-Возьмем $\forall q: 1 \le q \le m \land q \neq k:$ $e_q' = e_q$ .
-
-Пусть $c_0 = (c_{pc}^0, c_l^0, c_g^0, c_s^0, c^0_t, c^0_m)$, $c' = (c_{pc}', c_l', c_g', c_s', c_t', c_m')$, $e_k=(l_k, pSet_k, tSet_k, status_k)$, $e_k'=(l_k', pSet_k', tSet_k', status_k')$.
-Обозначим $TCT(e_1, \dots, e_k, \dots, e_m) = TCT_0$;
-
-{\textit 1)} Рассмотрим случай $g \neq thread\_create$, $g \neq thread\_join$, $g \neq thread\_exit$.
-
-В этом случае по определению отношения переходов 3 $e_k' = e_k$. Поэтому нам нужно показать, что
-$c' \in \epp
-\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix}$.
-
-По определению операций $g \neq thread\_create$, $g \neq thread\_join$, $g \neq thread\_exit$ получаем $c_t = c_t'$, $dom(c) = dom(c')$. Отсюда следует $c' \in \epp
-\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix}$, так как $\epp_M$ не зависит от других частей состояний.
-
-{\textit 2)} Рассмотрим случай $g = thread\_exit$. Нам нужно показать 
-\begin{align}
-& \exists k : 1 \le k \le m \land t_k = t \nonumber \\
-& \exists e_1', \dots, e_m' \in E: \nonumber \\
-& c' \in \epp
-\begin{pmatrix}
-\begin{pmatrix}
-e_1' \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_m' \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} \nonumber \\
-& \mbox{ where } e_1', \dots, e_m' \mbox{ such that } \nonumber \\
-&\exists i_1, \dots, i_{k-1}, i_{k+1}, \dots, i_m: \nonumber \\
-&
-\begin{cases}
-\forall q \neq k, q \neq r: e_q \tat{i_q} e_q' \land i_q \in \{i \mid e_k \tat{\tau} i\} \\
-e_k \tat{\tau} e_k'
-\end{cases} \nonumber 
-\end{align}
-
-В этом случае по определению отношения переходов 3 $l_k'=l_k$, $tSet_k'=pSet_k$, $status_k'=Dead$ , то есть $e_k' = (l_k, pSet_k, tSet_k, Dead)$.
-
-По определению $thread\_exit$ получаем $c_t = c_t'$, $dom(c') = (dom(c) \setminus \{t\})$.
-По предположению анализа~\ref{main_assumption_1} $(\cdot, t) \notin c_m$, $c_m = c_m'$.
-
-\begin{align}
-& \epp_M
-\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_k' \\
-t_k 
-\end{pmatrix},
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} = (def.~\ref{epp_thread_M}) =\nonumber \\
-& = \begin{cases}
-& \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
-\left| 
-\begin{array}{c}
-e_i = (l_i, pSet_i, tSet_i, status_i) \\
-dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
-c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \mathbb{N} \\
-\forall i, j \in \overline{1..m}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
-c_m = \{ t_j \mapsto t_i \mid (l_j, l_i) \in TCT(\{e_1, \dots, e_m\}) \\
-\end{array}
-\right.
-\right\rbrace, \\
-& \mbox{if } compatible_{E}(\{e_1, \dots, e_k', \dots, e_m), t_i \in T, t_i \neq t_j \\
-& \emptyset \mbox{ else}
-\end{cases} = \nonumber
-\end{align}
-
-Заметим, что $\forall i: 1 \le i \le m, i \neq k: tSet_i' = tSet_i$ и $tSet_k' = pSet_k$.
-По предположению~\ref{main_assumption_1} $(\cdot, t) \notin c_m$, $c_m = c_m'$.
-По определению $\epp$~\ref{epp_thread_M} это означает $(\cdot, l_k) \notin TCT(\{e_1, \dots, e_m\})$.
-По определению $TCT$~\ref{tct} $\forall 1 \le x \le m, 0 \le a \le \infty: (\cdot, \cdot) = label_a \in tSet_x \land (l_k, Child) = label_b \in tSet_x \implies a > b$.
-Поэтому это также верно для $x = k$, это означает, что $tSet$ не содержит никакую пару $(\cdot, \cdot)$ после $(l_k, Child)$.
-Итак, мы показали, что $tSet_k$ не содержит никакую метку после $(l_k, Child)$, что означает
-$tSet_k = pSet_k$ и $tSet_k = tSet_k'$. 
-Это означает $\forall i: 1 \le i \le m: tSet_i' = tSet_i$.
-$TCT$ зависит только от $tSet$ части состояния, поэтому $TCT' = TCT_0$.
-Единственное условие совместности состояний, которое поменялось, это $\forall 1 \le i \le m: status_i = Dead \implies pSet_i = tSet_i$.
-Так как мы только что доказали, что $pSet_k = tSet_k$ и другие состояния не изменилися, поэтому $compatible_E(e_1, \dots, e_k, \dots, e_m) = true$.
-
-\begin{align}
-& = \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
-\left| 
-\begin{array}{c}
-e_i = (l_i, tSet_i, status_i) \\
-dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
-c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \mathbb{N} \\
-\forall i, j \in \overline{1..m}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
-c_m = \{ t_j \mapsto t_i \mid (l_j, l_i) \in TCT(\{e_1, \dots, e_m\}) \\
-\end{array}
-\right.
-\right\rbrace \supseteq \nonumber
-\end{align}
-Выберем только одно подмножество $\mathbb{N} = \widehat{\mathbb{N}}$.
-\begin{align}
-& \supseteq \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
-\left| 
-\begin{array}{c}
-e_i = (l_i, tSet_i, status_i) \\
-dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
-c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \widehat{\mathbb{N}} \\
-\forall i, j \in \overline{1..m}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
-c_m = \{ t_j \mapsto t_i \mid (l_j, l_i) \in TCT(\{e_1, \dots, e_m\}) \\
-\end{array}
-\right.
-\right\rbrace = \nonumber
-\end{align}
-
-Заметим, что $TCT(\{e_1, \dots, e_k', \dots, e_m\}) = TCT(\{e_1, \dots, e_k, \dots, e_m\})$, откуда следует $\forall t_i: c_m(t_i) = c^0_m(t_i)$.
-
-\begin{align}
-& = \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
-\left| 
-\begin{array}{c}
-e_i = (l_i, tSet_i, status_i) \\
-dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
-c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \widehat{\mathbb{N}} \\
-\forall i, j \in \overline{1..m}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
-c_m = c^0_m \\
-\end{array}
-\right.
-\right\rbrace = \nonumber
-\end{align}
-
-Заметим, что $c_0 \in \epp_M
-\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix}$.
-
-Обозначим $dom_M\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} = \{t \mid t = t_i \land e_i=(\cdot, \cdot, status_i) \land status_i = Alive \land i \in \overline{1..m}\}$.
-
-Используя определение $\epp_M$~\ref{epp_thread_M} 
-для $e_1, \dots, e_m$, получаем
-$dom(c_0) = dom_M\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} = \mathbb{T}$.
-Для нового перехода $e_k \tatarrow e_k'$ получаем $dom_M\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_k' \\
-t_k 
-\end{pmatrix} ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} = (status_k' = Dead) = dom_M\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} \setminus \{t_k\} = \mathbb{T} \setminus \{t_k\}$
-\begin{align}
-& = \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
-\left| 
-\begin{array}{c}
-e_i = (l_i, tSet_i, status_i) \\
-dom(c) = \mathbb{T} \setminus \{t_k\} \\
-c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \widehat{\mathbb{N}} \\
-\forall i, j \in \overline{1..m}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
-c_m = c^0_m \\
-\end{array}
-\right.
-\right\rbrace = \tilde{C} \nonumber
-\end{align}
-
-Заметим, что $c'$ отличается от $c_0$ только $dom(c') = dom(c_0) \setminus \{t_k\}$.
-Мы можем сказать, что
-
-$c' \in \{c \mid dom(c) = dom(c_0) \setminus \{t_k\} \land c_t = c^0_{t} \land c_m = c^0_m\} = \tilde{C}$
-
-Это означает $c' \in \epp_M
-\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_k' \\
-t_k 
-\end{pmatrix},
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix}$.
-
-{\textit 3)} Рассмотрим случай $g = thread\_create(var, num, l_\nu)$, теперь нужно показать, что
-
-\begin{align}
-& \exists k : 1 \le k \le m \land t_k = t \nonumber \\
-& \exists e_1', \dots, e_{m+1}' \in E: \nonumber \\
-& c' \in \epp
-\begin{pmatrix}
-\begin{pmatrix}
-e_1' \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_{m+1}' \\
-t_{m+1} 
-\end{pmatrix}
-\end{pmatrix} \nonumber \\
-& \mbox{ where } e_1' \dots e_{m+1}' \mbox{ such that } \nonumber \\
-&\exists i_1, \dots, i_{k-1}, i_{k+1}, \dots, i_m: \nonumber \\
-&
-\begin{cases}
-\forall q \neq k: e_q \tat{i_q} e_q' \land i_q \in \{i \mid e_k \tat{\tau} i\} \\
-e_k \tat{\tau, tc_{parent}} e_k' \\
-e_k \tat{\tau, tc_{child}} e_{m+1}'
-\end{cases} \nonumber 
-\end{align}
-
-По определению $thread\_create$ 
-$dom(c') = dom(c_0) \cup \{\nu\}$, $c_t' = c^0_t \cup \{(var, num) \mapsto \nu\}$, $c_m'(t) = c_m(t) \cup \{\nu\}$ и
-$\forall q: 1\le q\le m: \nu \ne t_q$.
-По основному предположению~\ref{main_assumption_2} 
-$\forall n: c_t(var, n) \notin T$.
-Пусть $t_{m+1} = \nu$ и обозначим $e_k' = (l_k', pSet_k', tSet_k', status_k')$, а $e_{m+1}' = (l_{m+1}', pSet_{m+1}', tSet_{m+1}', status_{m+1}')$.
-
-В соответсвтии с определением переходов 3, %tc_child, tc_parent
-$l_k' = l_k$ и $l_{m+1}' = var$. Поэтому
-\begin{align}
-& \epp_M
-\begin{pmatrix}
-\begin{pmatrix}
-e_1' \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_{m+1}' \\
-\nu 
-\end{pmatrix}
-\end{pmatrix} = (def.~\ref{epp_thread_M}) = \nonumber \\
-& = \begin{cases}
-& \left\lbrace (c_{pc},c_l,c_g,c_s,c_t, c_m) \in C 
-\left| 
-\begin{array}{c}
-e_i = (l_i, pSet_i, tSet_i, status_i) \\
-dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
-c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \mathbb{N} \\
-\forall i, j \in \overline{1..m+1}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
-c_m = \{ t_j \mapsto t_i \mid (l_j, l_i) \in TCT(\{e_1, \dots, e_k', \dots, e_{m+1}'\}) \\
-\end{array}
-\right.
-\right\rbrace, \\
-& \mbox{if } \forall i \neq j: compatible_{E}(\{e_1, \dots, e_k', \dots, e_{m+1}'\}), t_i \in T, t_i \neq t_j \\
-& \emptyset \mbox{ else}
-\end{cases} = \nonumber
-\end{align}
-
-Покажем, что $compatible_E(e_1, \dots, e_k', \dots, e_{m+1}')$.
-Обозначим $e_k' = (l_k', pSet_k', tSet_k', status_k')$, $e_{m+1}' = (l_{m+1}', pSet_{m+1}', tSet_{m+1}', status_{m+1}')$.
-$tSet_k' = tSet_k \cup (var, Parent)$, $tSet_{m+1}' = tSet \cup (var, Child)$.
-$TCT' = TCT(\{e_1, \dots, e_k', \dots, e_{m+1}'\}) = TCT_0 \cup {(var, l_k)}$. 
-Чтобы проверить $compatible_E(e_1, \dots, e_k', \dots, e_{m+1}')$, нам нужно показать три основные части:
-\begin{enumerate}
-\item $\forall (v_i, v_j) \in TCT(\{e_1, \dots, e_k', \dots, e_{m+1}'\}): (v_i, v_k) \in TCT(\{e_1, \dots, e_k', \dots, e_{m+1}'\}) \implies l_k = l_j$
-Так как $TCT' = TCT_0 \cup {(var, l_k)}$ нам нужно проверить, есть ли другая пара $(var, \cdot)$.
-Предствим, что условие нарушено и $\exists 1 \le f \le m: (var, l_f) \in TCT_0$.
-Это означает, что $\exists n_v, n_f \in \mathbb{N}: c^0_m(var, n_v) = t_f \land t_f = c_t(l_f, n_f) \land TCT_g(var, l_f)$.
-Теперь попытаемся выполнить переход$c_0 \tat{t, g} c'$, $g = thread\_create(var, num, l_{\nu})$ и $t \neq l_f$. 
-%??????
-% how follows
-Этот случай противоречит основному предположению~\ref{main_assumption_4}.
-Поэтому $(var, \cdot) \notin TCT_0$ и условие выполнено.
-\item $\forall i \neq j: compatible_{TM}(e_i, e_j)$
-Так как $\forall 1 \le i \le m, i \neq k: tSet_i' = tSet_i$ нам нужно только проверить $i = k$ и $i = m +1$.
-\begin{itemize}
-\item Рассмотрим $e_j:j \neq k \land j \neq m + 1$ и $e_k'$. 
-$tSet_k' = tSet_k \cup (var, Parent)$. Рассмотрим случайное множество $tSet_j$. Так как известно, что $compatible(e_j, e_k)$, это означает, что 
-\begin{align}
-& \exists 0 \le p_1, p_2 \le \infty: var^k_{p_1} = var^j_{p_2} \land status^k_{p_1} \neq status^j_{p_2} \nonumber
-\end{align}
-Теперь представим, что $compatible(e_k', e_j) = false$. Так как множество $tSet_k'$ только шире, это означает, что существует такие же $p_1, p_2: var^{k'}_{p_1} = var^j_{p_2} \land status^{k'}_{p_1} \neq status^j_{p_2}$.
-\item Рассмотрим $e_j:j \neq k \land j \neq m + 1$ и $e_{m+1}'$. Этот случай такой же, как и предыдущий.
-\item Рассмотрим $e_k'$ и $e_{m+1}'$.
-$\exists(var, Parent) \in tSet_k' \land (var, Child) \in tSet_{m+1}'$. Эта пара удовлетворяет условию на $compatible$, что означает$compatible_M(e_k, e_{m+1}')$
-\end{itemize}
-Так, мы показали, что все новые состояния $e_i'$ и $e_j'$ являются совместными.
-\item $\forall 1 \le i \le m+1: status_i = Dead \implies pSet_i = tSet_i$.
-Заметим, что $\forall 1 \le i \le m: status_i' = status_i$ и $status_{m+1}' = Alive$.
-Если предыдущие состояния были совместны, тогда следующие состояния также удовлетворяют этому условию.
-\item $\forall 1 \le i \le m+1: (l_i, Child) \in pSet_i$.
-Заметим, что $\forall 1 \le i \le m: pSet_k' = pSet_k$. Ничего не изменилось
-$pSet_{m+1} = tSet_{m+1}' = tSet_k \cup \{(var, Child)\}$ и $l_{m+1} = var$. Поэтому условие выполнено.
-\item $\forall 1 \le i \le m, 0 \le x \le \infty, y > x: (l_i, Child) = label_x \in tSet_i \implies \forall label_y = (v_y, status_y) \in tSet_i \land status_y = Parent$.
-Заметим, что $\forall 1 \le i \le m, i \neq k: tSet_i' = tSet_i$. Ничего не изменилось.
-$tSet_k' = tSet_k \cup \{(var, Parent)\}$. Условие все еще вероне, так как мы не добавили метку $Child$.
-$tSet_{m+1}' = tSet_k \cup \{(var, Child)\}$. Условие верное, так как после метки $Child$ нет ни одной метки.
-\end{enumerate}
-
-\begin{align}
-& = \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
-\left| 
-\begin{array}{c}
-e_i = (l_i, tSet_i, status_i) \\
-dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
-c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \mathbb{N} \\
-\forall i, j \in \overline{1..m+1}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
-c_m = \{ t_j \mapsto t_i \mid (l_j, l_i) \in TCT(\{e_1, \dots, e_k', \dots, e_{m+1}'\}) \\
-\end{array}
-\right.
-\right\rbrace \supseteq \nonumber
-\end{align}
-
-Выберем $\tilde{\mathbb{N}} = \widehat{\mathbb{N}} \cup \{num\}$.
-
-\begin{align}
-& \supseteq \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
-\left| 
-\begin{array}{c}
-e_i = (l_i, tSet_i, status_i) \\
-dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
-c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \tilde{\mathbb{N}} \\
-\forall i, j \in \overline{1..m+1}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
-c_m = \{ t_j \mapsto t_i \mid (l_j, l_i) \in TCT(\{e_1, \dots, e_k', \dots, e_{m+1}'\}) \\
-\end{array}
-\right.
-\right\rbrace = \nonumber
-\end{align}
-
-Заметим, что $TCT' = TCT(\{e_1, \dots, e_k', \dots, e_{m+1}'\}) = TCT_0 \cup {(var, l_k)}$. Откуда следует $c_m'(\nu) = c_m(t_k)$.
-
-\begin{align}
-& = \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
-\left| 
-\begin{array}{c}
-e_i = (l_i, tSet_i, status_i) \\
-dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
-c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \tilde{\mathbb{N}} \\
-\forall i, j \in \overline{1..m+1}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
-c_m(t_i) = \begin{cases}
-c^0_m(t_i)&, \mbox{ if } i \neq m+1 \\
-t&, \mbox{ if } i = m+1 \\
-\end{cases}
-\end{array}
-\right.
-\right\rbrace = \nonumber
-\end{align}
-
-Используя определение $\epp_M$~\ref{epp_thread_M}
-для $e_1, \dots, e_m$ получаем
-$dom(c_0) = dom_M\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} = \mathbb{T}$.
-Для нового перехода $e_k \tatarrow e_k'$ и $e_k \tatarrow e_{m+1}'$ получаем $dom_M\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_k' \\
-t_k 
-\end{pmatrix} ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix},
-\begin{pmatrix}
-e_{m+1}' \\
-\nu 
-\end{pmatrix}
-\end{pmatrix} = (status_{m+1}' = Alive) = dom_M\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} \cup \{\nu\} = \mathbb{T} \cup \{\nu\}$
-
-\begin{align}
-& = \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
-\left| 
-\begin{array}{c}
-e_i = (l_i, tSet_i, status_i) \\
-dom(c) = \mathbb{T} \cup \{\nu\}\\
-c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \tilde{\mathbb{N}} \\
-\forall i, j \in \overline{1..m+1}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
-c_m(t_i) = \begin{cases}
-c^0_m(t_i)&, \mbox{ if } i \neq m+1 \\
-t&, \mbox{ if } i = m+1 \\
-\end{cases}
-\end{array}
-\right.
-\right\rbrace = \tilde{C} \nonumber 
-\end{align}.
-
-Заметим, что $c'$ отличается от $c_0$ только $dom(c') = dom(c_0) \cup \{\nu\}$, $c_t' = c^0_t \cup \{(var, num) \mapsto \nu\}$ и $c_m'(t_k) = c^0_m(t_k) \cup \{\nu\}$.
-Можно сказать, что
-
-$c' \in \{c \in C \mid dom(c) = dom(c_0)  \cup \{\nu\} \land c_t' = c^0_t \cup \{(var, num) \mapsto \nu\} \land c_m' = c^0_m \cup \{\nu \mapsto t_k\} \} = \tilde{C}$
-
-Это означает $c' \in \epp_M
-\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_k' \\
-t_k 
-\end{pmatrix},
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix},
-\begin{pmatrix}
-e_{m+1} \\
-\nu 
-\end{pmatrix}
-\end{pmatrix}$.
-
-{\textit 4)} Рассмотрим случай $g = thread\_join(var, num)$, теперь нужно показать, что
-
-\begin{align}
-& \exists k : 1 \le k \le m \land t_k = t \nonumber \\
-& \exists r \in \overline{1..m}: \exists e_1', \dots, e_m' \in E: \nonumber \\
-& c' \in \epp
-\begin{pmatrix}
-\begin{pmatrix}
-e_1' \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_{r-1}' \\
-t_{r-1} 
-\end{pmatrix} ,
-\begin{pmatrix}
-e_{r+1}' \\
-t_{r+1} 
-\end{pmatrix},
-\dots& ,
-\begin{pmatrix}
-e_m' \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} \nonumber \\
-& \mbox{ where } e_1', \dots, e_{r-1}, e_{r+1}, \dots, e_m' \mbox{ such that } \nonumber \\
-&\exists i_1, \dots, i_{k-1}, i_{k+1}, \dots, i_m: \nonumber \\
-&
-\begin{cases}
-\forall q \neq k, q \neq r: e_q \tat{i_q} e_q' \land i_q \in \{i \mid e_k \tat{\tau} i\} \\
-e_k \tat{\tau} e_k'
-\end{cases} \nonumber 
-\end{align}
-
-По определению $thread\_join$
-$\exists t: t = c_t(var, num) \land t \notin dom(c)$, $c_t' = c^0_t \setminus \{(var, num) \mapsto t\}$, $c_m' = c^0_m \setminus (t, \cdot)$.
-По определению отношения переходов $transfer$~3
-$e_k' = (l_k', pSet_k', tSet_k', Active)$, $tSet_k' = tSet_k \setminus \{(var, Parent)\}$, $pSet_k' = pSet_k$.
-
-Так как $\exists t: t \notin dom(c) \land c_t(var, num) = t \land c \in \epp_M
-\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix}$, 
-, это означает $\exists r: t_r = t \land e_r = (l_r, pSet_r, tSet_r, Exit)$ (определение $\epp$~\ref{epp_thread_M}).
-
-Заметим, что $r \neq k$, потому что ни одна операция не может быть выполнена после $thread\_join$.
-
-Сейчас нужно показать, что
-$c' \in \epp_M
-\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}&,
-\dots& ,
-\begin{pmatrix}
-e_{r-1} \\
-t_{r-1} 
-\end{pmatrix},
-\begin{pmatrix}
-e_{r+1} \\
-t_{r+1} 
-\end{pmatrix},
-\dots& ,
-\begin{pmatrix}
-e_k' \\
-t_k 
-\end{pmatrix} ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix}
-$
-
-\begin{align}
-& \epp_M
-\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}&,
-\dots&,
-\begin{pmatrix}
-e_{r-1} \\
-t_{r-1} 
-\end{pmatrix},
-\begin{pmatrix}
-e_{r+1} \\
-t_{r+1} 
-\end{pmatrix},
-\dots& ,
-\begin{pmatrix}
-e_k' \\
-t_k 
-\end{pmatrix} ,
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} = (def.~\ref{epp_thread_M}) = \nonumber \\
-& = \begin{cases}
-& \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
-\left| 
-\begin{array}{c}
-e_i = (l_i, pSet_i, tSet_i, status_i) \\
-dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
-c_t = \{(l_i, num_i) \mapsto t_i\}, num_i \in \mathbb{N} \\
-\forall i, j \in \overline{1..m}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
-c_m = \{ t_j \mapsto t_i \mid (l_j, l_i) \in TCT(\{e_1, \dots, e_{r-1}, e_{r+1}, \dots, e_k', \dots, e_m\}) \\
-\end{array}
-\right.
-\right\rbrace, \\
-& \mbox{if } \forall i \neq j: compatible_{E}(\{e_1, \dots, e_{r-1}, e_{r+1}, \dots, e_k', \dots, e_m\}), t_i \in T, t_i \neq t_j \\
-& \emptyset \mbox{ else}
-\end{cases} = \nonumber
-\end{align}
-
-Покажем, что новые состояний все еще совместны.
-В соответствии с основным предположением~\ref{main_assumption_1} $\forall t_c \in T: c^0_m(t_c) \neq t_r$.
-Нам нужно проверить только
-
-\begin{enumerate}
-\item $\forall (v_i, v_j) \in TCT(\{e_1, \dots, e_{r-1}, e_{r+1}, \dots, e_m\}): (v_i, v_k) \in TCT(\{e_1, \dots, e_{r-1}, e_{r+1}, \dots, e_m\}) \implies v_k = v_j$.
-Удаление одного состояния $e_r$ и одной метки $(l_r, Parent)$ из состояния $e_k$ может только удалить дуги и не может изменить существующие направления. Поэтому глобальная структура графа не может измениться.
-\item $\forall i \neq j: compatible_{TM}(e_i, e_j)$.
-По определению $\epp$~\ref{epp_thread_M} $(l_r, l_k) \in TCT_0$.
-По определению TCT~\ref{tct} $\forall 1 \le x \le m: (l_r, \cdot) \in tSet_x \implies (l_k, Child) \in tSet_x$.
-По определению $compatible_E$~\ref{compatible_E_thread_M} $status_r = Dead \implies pSet_r = tSet_r$.
-По определению $compatible_E$~\ref{compatible_E_thread_M} $(l_r, Child) \in pSet_r = tSet_r$.
-Так как $(l_r, l_k) \in TCT_0$, $tSet_r = \{\dots, (l_k, Child), (\cdot, Parent), \dots, (\cdot, Parent), (l_r, Child)\}$.
-По определению $compatible_E$~\ref{compatible_E_thread_M} $tSet_k = \{\dots, (l_k, Child), (\cdot, Parent), \dots, (\cdot, Parent)\}$.
-Заметим, что части последовательностей $tSet_r$ и $tSet_k$ до $(l_k, Child)$ должны быть одинаковы, иначе $TCT$ будет отличаться.
-По определению $compatible_E$~\ref{compatible_E_thread_M} $compatible_{TM}(e_k, e_r)$.
-Единственная возможность, чтобы быть совместными -- это $(l_r, Parent) \in tSet_k$, $l_r = var$.
-Сейчас нужно показать, что после удаления $(l_r, Parent)$ из $tSet_k$ другие состояния остаются совместными.
-Представим, что $\exists s \neq r: compatible(e_s, e_k) \land (compatible(e_s, e_k') = false)$. 
-Это означает, что $(var, Child) \in tSet_s$. Так как $s \neq r$, $l_s \neq l_r$~\ref{main_assumption_4}.
-%!!!!!!!!!!!!!!!!!
-
-По определению $compatible_E$~\ref{compatible_E_thread_M}, $(l_s, Child) \in tSet_s$.
-Более того, соответствующая метка $(l_s, Child)$ должна быть последней меткой в последовательности $tSet_s$.
-$tSet_s = \{\dots, (l_r, Child), \dots, (l_s, Child)\}, (\cdot, Parent), \dots\}$.
-Заметим, что части до $(l_r, Child)$ должны быть равны для обоих $tSet_r$ и $tSet_s$, иначе TCT разрушится.
-Это означает, что $compatible_E(e_s, e_r) = false$.
-И $\forall s: compatible(e_s, e_k) \land compatible(e_s, e_k')$
-\item $\forall 1 \le i \le m: status_i = Dead \implies pSet_i = tSet_i$.
-Так как статусы не менялись, условие выполнено.
-\item $\forall 1 \le i \le m: (l_i, Child) \in pSet_i$.
-Так как $\forall 1 \le i \le m: pSet_i' = pSet_i$ соответствующее условие выполнено.
-\item $\forall 1 \le i \le m, 0 \le x \le \infty, y > x: (l_i, Child) = label_x \in tSet_i \implies  \forall label_y = (v_y, status_y) \in tSet_i \land status_y = Parent$.
-Так как $\forall 1 \le i \le m, i \neq k, i \neq r: tSet_i' = tSet_i$ соответствующее условие выполнено.
-$tSet_k' = tSet_k \setminus \{(l_r, Parent)\}$. Метки$(\cdot, Child)$ не изменились, поэтому условие выполено.
-\end{enumerate}
-
-\begin{align}
-& = \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
-\left| 
-\begin{array}{c}
-e_i = (l_i, tSet_i, status_i) \\
-dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
-\exists \mathbb{M} \subseteq \overline{1..m}: \\
-c_t = \{(l_i, num_i) \mapsto t_i\} \land i \in \mathbb{M} \\
-num_i \in \mathbb{N}, e_i = (l_i, \cdot), i \in \mathbb{M} \\
-\forall i, j \in \mathbb{M}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
-c_m = \{t_i \mapsto W_i \mid W_i = \{t_j \mid (l_j, \cdot) \in tSet_i \setminus pSet_i \}\} \\
-\end{array}
-\right.
-\right\rbrace \supseteq \nonumber
-\end{align}
-
-Выберем $\tilde{\mathbb{M}} = \widehat{\mathbb{M}} \setminus \{r\}$.
-
-\begin{align}
-& \supseteq \left\lbrace (c_{pc},c_l,c_g,c_s, c_t) \in C 
-\left| 
-\begin{array}{c}
-e_i = (l_i, tSet_i, status_i) \\
-dom(c) = \{t \mid t = t_i \land status_i = Alive\}\\
-c_t = \{(l_i, num_i) \mapsto t_i\} \land i \in \tilde{\mathbb{M}} \\
-num_i \in \mathbb{N}, e_i = (l_i, \cdot), i \in \tilde{\mathbb{M}} \\
-\forall i, j \in \widehat{\mathbb{M}}, i \neq j: (l_i, num_i) \neq (l_j, num_j)\\
-c_m = \{t_i \mapsto W_i \mid W_i = \{t_j \mid (l_j, \cdot) \in tSet_i \setminus pSet_i \}\} \\
-\end{array}
-\right.
-\right\rbrace = \tilde{C} \nonumber
-\end{align}
-
-$c'$ отличается от $c_0$ только удалением $(var, num)$ из $c_t$. 
-Можно сказать, что
-
-$c' \in \{c \in C \mid dom(c) = dom(c_0)  \cup \{\nu\} \land c_t' = c^0_t \setminus \{(var, num) \mapsto t_r\} \} = \tilde{C}$
-
-Это означает $c' \in \epp_M
-\begin{pmatrix}
-\begin{pmatrix}
-e_1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_k' \\
-t_k 
-\end{pmatrix},
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix}$.
-
-%We have the transfer $\top \tat{\tau, g}_T (\top, \pi)$ for all $g\in G$.
-
-%$\forall t,i \in E_T: compatible^E(t,i) \implies t \tat{i, g}_T (t, \pi)$, because 
-%\begin{itemize}
-%\item inference object guards the transfer by checking inequality of thread identifiers in compatible,
-%\item states are {\em invariant to environment}, i.e. no thread can change an identifier of the other thread.
-%\end{itemize}
-
-{\textbf 4.} Оператор слияния состояний не объединяет элементы: $merge^E_T(e, e', \pi) = e'$. Как уже было показано ранее, такой оператор слияния удовлетворяет условию~\ref{cpa_merge_tm_e_eq}.
-
-{\textbf 5.} Оператор останова для состояний рассматривает абстрактные состояния по одному: $stop^E_T(e, R, \pi) = (e \in R)$. Как уже было показано ранее, такой оператор останова удовлетворяет условию~\ref{cpa_stop_tm_e_eq}.
-
-{\textbf 6.} Состояния и точностть никогда не изменяются: $prec^E_T(e, \pi, R) = (e, \pi)$. Как уже было показано ранее, такой оператор удовлетворяет условию~\ref{prec_tm_e_equation}.
-
-{\textbf 7.} 
-\begin{equation}
-\label{compatible_thread}
-\begin{aligned}
-& e = (l^e, tSet^e, status^e), i = (l^i, tSet^i, status^i), \\
-& compatible_T(e,i) = \exists (var, \cdot): \\
-& (var, s_e) \in tSet_e \land  (var, s_i) \in tSet_i \land s_e \neq s_i \land \\
-& (var, s_e') \in tSet_e \implies s_e = s_e' \land \\
-& (var, s_i') \in tSet_i \implies s_i = s_i'
-\end{aligned}
-\end{equation}
-
-\section{Метод поиска состояния гонки}
-
-Метод поиска состояний гонки содержит в себе комбинацию рассмотренных выше анализов: анализ точек программы $\mathcal{L}$, анализ потоков $\mathbb{M}$, анализ примитивов синхронизации $\mathbb{S}$ и анализ предикатов $\mathbb{P}$. 
-Все эти анализы объединяются с помощью композитного анализа $\mathbb{C}$.
-Операторы каждого из этих видов анализа удовлетворяют условиям~\ref{cpa_transfer_eq},~\ref{cpa_merge_tm_e_eq},~\ref{cpa_merge_tm_i_eq},~\ref{cpa_merge_tm_e_eq},~\ref{cpa_merge_tm_i_eq},~\ref{prec_tm_e_equation},~\ref{prec_tm_i_equation}, а значит, позволяют утверждать по теореме~\ref{thrm_soundness}, что множество вычесленных абстрактных состояний аппроксимирует свержу множество конкретных состояний программы.
-Таким образом, если в числе абстрактных состояний программы присутствует ошибочное, значит, программа не соответствует поставленной спецификации.
-
-Покажем, что для программы, содержащей состояний гонки в смысле определения~\ref{raceDef}, будет найдено состояние гонки.
-Пусть у нас есть множество достижимых состояний $R: \exists c, c_1, c_2 \in \conc{R} \subseteq C, g_1, g_2 \in G, \widehat{t}, \overline{t} \in T, \widehat{t} \neq \overline{t}: c \tcarrow{g_1, \widehat{t}} c_1, c \tcarrow{g_2, \overline{t}} c_2$, то есть присустствует состояние гонки.
-По требованию~\ref{transfer_tm_ir_stronger} 
-\begin{align}
-\exists e_1,\dots,e_m,e_1', \dots, e_m', e_1'',\dots,e_m'' \in R, \nonumber \\
-t_1, \dots, t_n \in T, k, l \in \mathbb{N}: t_k = \widehat{t}, t_l = \overline{t} \nonumber \\
-c \in \epp
-\begin{pmatrix}
-\begin{pmatrix}
-e_1^1 \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_k \\
-t_k 
-\end{pmatrix},
-\dots& ,
-\begin{pmatrix}
-e_m \\
-t_m 
-\end{pmatrix}
-\end{pmatrix}, \nonumber \\
-e_k \tat{\tau, g_1} e_k', e_k \tat{\tau} i', e_j \tat{i'} e_j', j \neq k, \nonumber \\
-e_l \tat{\tau, g_2} e_l'', e_l \tat{\tau} i'', e_j \tat{i''} e_j'', j \neq l, \nonumber \\
-c_1 \in \epp
-\begin{pmatrix}
-\begin{pmatrix}
-e_1' \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_k' \\
-t_k 
-\end{pmatrix},
-\dots& ,
-\begin{pmatrix}
-e_m' \\
-t_m 
-\end{pmatrix}
-\end{pmatrix},\nonumber \\
-c_2 \in \epp
-\begin{pmatrix}
-\begin{pmatrix}
-e_1'' \\
-t_1 
-\end{pmatrix}& ,
-\dots& ,
-\begin{pmatrix}
-e_l'' \\
-t_l 
-\end{pmatrix},
-\dots& ,
-\begin{pmatrix}
-e_m'' \\
-t_m 
-\end{pmatrix}
-\end{pmatrix} \nonumber
-\end{align}
-
-Таким образом, необходимым условием состояния гонки в программе, являются четыре состояния $e_k, e_k', e_l, e_l'' \in R: e_k \tat{\tau, g_1} e_k', e_l \tat{\tau, g_2} e_l''$. 
-При этом такие состояния должны быть совместнымы по требованию оператора $\epp$, а операции $g_1, g_2$ теми же, что и в определении состояния гонки~\ref{raceDef}: доступ к одной области памяти, и хотя бы одна операция записи.
-
-Можно упростить это условие еще сильнее, так как на самом деле состояния $e_k', e_l''$ также не важны для определения состояния гонки, важен лишь сам факт наличия перехода.
-Итак, можно сформулировать определение состояния гонки наабстрактных состояниях.
+По требованию~\ref{cpa_transfer_inner_eq} переход $e_0$ должен быть применим ($apply$) ко всем переходам $\tilde{e}_i$, а значит и к $\tilde{e}_0$.
+Таким образом, получаем, что переходы $e_0$ и $\tilde{e}_0$ должны быть совместны.
+При этом требования на абстракные операции $q_1, q_2$ должны быть теми же, что и в определении состояния гонки~\ref{raceDef}: доступ к одной области памяти, и хотя бы одна операция записи.
+Итак, можно сформулировать определение состояния гонки на абстрактных состояниях.
 
 \begin{defn}
 \label{raceDef_abstract}
-Программа, для которой получено множество достижимых абстрактных состояний $R$, содержит \textbf{состояние гонки}, если $\exists e_1, e_2 \in R$, $g_1, g_2 \in G: e_1 \tat{\tau, g_1} \cdot \land e_2 \tc{\tau, g_2} \cdot$ и операции $g_1, g_2$ выполняются над одной и той же глобальной переменной $x \in X^{global}$ и хотя бы одна операция является присваиванием (то есть $assign(x, expr)$).
+Программа, для которой получено множество достижимых абстрактных состояний $R$, содержит \textbf{состояние гонки}, если $\exists e_1, e_2 \in R$, $e_i=(s_i,q_i)$, $q_1, q_2 \in G$, $compatible(e_1, e_2)$ и операции $g_1, g_2$ выполняются над одной и той же глобальной переменной $x \in X^{global}$ и хотя бы одна операция является присваиванием (то есть $assign(x, expr)$).
 \end{defn}
 
 
