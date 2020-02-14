@@ -1329,7 +1329,7 @@ $compatible_Q(\tau, \tau') = (gl=gl' \land s=s')$
 \end{enumerate}
 
 \section{Композиция различных видов анализа}
-\label{sect_composite_analysis}
+\label{sect_ccc_analysis}
 
 Композиция различных типов анализа принципиально важна для объединения различных техник анализа программы в одном алгоритме.
 CompositeCPA содержит в себе различные внутренние CPA, в которых переходы выполняются параллельно.
@@ -1830,7 +1830,7 @@ t_n
 Такое определение оператора $\epp$ очевидно удовлетворяет условиям~\ref{cpa_tm_epp_split_req_1},~\ref{cpa_tm_epp_split_req_2}, так как используется плоская решетка.
 
 Множество абстрактных дуг содержит тождественную дугу, которая не меняет абстрактное состояние, абстрактные дуги, соответсвующие созданию потока, а также верхний и нижний элементы решетки: $\mathcal{G} = \{\bot^T_T, \varepsilon, \top^T_T\} \cup \{create\} \times T$.
-Оператор конкретизации для дуг является тривиальным: $\econc{\bot^T_T} = \emptyset$,  $\econc{\top^T_T} = G $, $\econc{\varepsilon} =G \setminus \{thread_create(\cdot)\}$, $\econc{(create,t)} = thread_create(t)$.
+Оператор конкретизации для дуг является тривиальным: $\econc{\bot^T_T} = \emptyset$,  $\econc{\top^T_T} = G $, $\econc{\varepsilon} =G \setminus \{thread\_create(\cdot)\}$, $\econc{(create,t)} = thread\_create(t)$.
 
 \item Множество точности не используется и состоит из одного элемента: $\Pi_T = \{\{\emptyset\}\}$.
 
@@ -2224,7 +2224,7 @@ $v \models \theta_{X^{local},1}(s_1) \land \dots \land \theta_{X^{local},n}(s_n)
 \begin{equation}
 \label{predicate_epp_def}
 \begin{aligned}
-&\forall s_1, \dots, s_n \in E^S_P, t_0, t_1,\dots,t_n \in T, t_i \neq t_j:\\
+&\forall s_0, \dots, s_n \in E^S_P, t_0, \dots,t_n \in T, t_i \neq t_j:\\
 & \epp^S_P
 \left(
 \begin{pmatrix}
@@ -2487,7 +2487,7 @@ $(s, q)|_p = (s, \varepsilon)$.
 \end{minipage}
 \end{figure}
 
-Рисунок~\ref{img:LockCPA} демонстрирует пример переходов анализа явных значений.
+Рисунок~\ref{img:ValueCPA} демонстрирует пример переходов анализа явных значений.
 В абстрактном состоянии содержится отображение из переменных в их значения. 
 
 Перейдем к формальному описанию ValueCPA.
