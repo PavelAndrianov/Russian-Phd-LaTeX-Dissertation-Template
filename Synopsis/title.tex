@@ -33,15 +33,16 @@
 {\centering\thesisCity~--- \thesisYear\par}
 
 \newpage
+{\SingleSpacing
 % оборотная сторона обложки
 \thispagestyle{empty}
-\noindent Работа выполнена в {институте системного программирования им. В.П. Иванникова Российской академии наук}.
+\noindent Работа выполнена в {Федеральном государственном бюджетном учреждении науки Институте системного программирования им. В.П. Иванникова Российской академии наук}.
 
 \vspace{0.008\paperheight plus1fill}
 \noindent%
 \begin{tabularx}{\textwidth}{@{}lX@{}}
-    Научный руководитель:   & \supervisorRegalia\par
-                              \textbf{\supervisorFio}
+    Научный руководитель:   & \textbf{\supervisorFio}\par
+                              \supervisorRegalia 
     \vspace{0.013\paperheight}\\
     Официальные оппоненты:  &
     \ifnumequal{\value{showopplead}}{0}{\vspace{13\onelineskip plus1fill}}{%
@@ -66,15 +67,15 @@
 \noindent Защита состоится \defenseDate~на~заседании диссертационного совета \defenseCouncilNumber~при \defenseCouncilTitle~по адресу: \defenseCouncilAddress.
 
 \vspace{0.008\paperheight plus1fill}
-\noindent С диссертацией можно ознакомиться в библиотеке \synopsisLibrary.
+\noindent С диссертацией можно ознакомиться в библиотеке и на сайте Федерально­го государственного бюджетного учреждения науки Институте системногопрограммирования им. В. П. Иванникова РАН.
 
-\vspace{0.008\paperheight plus1fill}
-\noindent Отзывы на автореферат в двух экземплярах, заверенные печатью учреждения, просьба направлять по адресу: \defenseCouncilAddress, ученому секретарю диссертационного совета~\defenseCouncilNumber.
+%\vspace{0.008\paperheight plus1fill}
+%\noindent Отзывы на автореферат в двух экземплярах, заверенные печатью учреждения, просьба направлять по адресу: \defenseCouncilAddress, ученому секретарю диссертационного совета~\defenseCouncilNumber.
 
 \vspace{0.008\paperheight plus1fill}
 \noindent{Автореферат разослан \synopsisDate.}
 
-\noindent Телефон для справок: \defenseCouncilPhone.
+%\noindent Телефон для справок: \defenseCouncilPhone.
 
 \vspace{0.008\paperheight plus1fill}
 \noindent%
@@ -94,3 +95,5 @@ r
     &
     \defenseSecretaryFio
 \end{tabularx} 
+
+}
