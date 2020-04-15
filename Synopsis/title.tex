@@ -7,7 +7,7 @@
     \ifnumequal{\value{showperssign}}{0}{%
         \rule[0pt]{0pt}{1.5cm}
     }{
-        \includegraphics[height=1.5cm]{personal-signature.png}
+        %\includegraphics[height=1.5cm]{personal-signature.png}
     }\\
 \end{tabularx}
 
@@ -33,51 +33,53 @@
 {\centering\thesisCity~--- \thesisYear\par}
 
 \newpage
-{\SingleSpacing
+{
 % оборотная сторона обложки
 \thispagestyle{empty}
-\noindent Работа выполнена в {Федеральном государственном бюджетном учреждении науки Институте системного программирования им. В.П. Иванникова Российской академии наук}.
+\SingleSpacing
+\noindent Работа выполнена в {Федеральном государственном бюджетном учреждении науки Институте системного программирования им. В.П. Иванникова Российской академии наук} и в {Федеральном государственном автономном образовательном учреждении высшего образования <<Московский физико-технический институт (национальный исследовательский университет)>>}.
 
-\vspace{0.008\paperheight plus1fill}
+\vspace{1mm}
 \noindent%
 \begin{tabularx}{\textwidth}{@{}lX@{}}
     Научный руководитель:   & \textbf{\supervisorFio}\par
                               \supervisorRegalia 
-    \vspace{0.013\paperheight}\\
+\\
+%    \vspace{1mm}\\
     Официальные оппоненты:  &
-    \ifnumequal{\value{showopplead}}{0}{\vspace{13\onelineskip plus1fill}}{%
+    \ifnumequal{\value{showopplead}}{0}{\vspace{1mm}}{%
         \textbf{\opponentOneFio,}\par
         \opponentOneRegalia,\par
         \opponentOneJobPlace,\par
         \opponentOneJobPost\par
-            \vspace{0.01\paperheight}
+            \vspace{1mm}
         \textbf{\opponentTwoFio,}\par
         \opponentTwoRegalia,\par
         \opponentTwoJobPlace,\par
         \opponentTwoJobPost
     }%
-    \vspace{0.013\paperheight} \\
+    \vspace{1mm} \\
     Ведущая организация:    &
-    \ifnumequal{\value{showopplead}}{0}{\vspace{6\onelineskip plus1fill}}{%
+    \ifnumequal{\value{showopplead}}{0}{\vspace{1mm}}{%
         \leadingOrganizationTitle
     }%
 \end{tabularx}
-\vspace{0.008\paperheight plus1fill}
+\vspace{1mm}
 
 \noindent Защита состоится \defenseDate~на~заседании диссертационного совета \defenseCouncilNumber~при \defenseCouncilTitle~по адресу: \defenseCouncilAddress.
 
-\vspace{0.008\paperheight plus1fill}
+\vspace{1mm}
 \noindent С диссертацией можно ознакомиться в библиотеке и на сайте Федерально­го государственного бюджетного учреждения науки Институте системногопрограммирования им. В. П. Иванникова РАН.
 
 %\vspace{0.008\paperheight plus1fill}
 %\noindent Отзывы на автореферат в двух экземплярах, заверенные печатью учреждения, просьба направлять по адресу: \defenseCouncilAddress, ученому секретарю диссертационного совета~\defenseCouncilNumber.
 
-\vspace{0.008\paperheight plus1fill}
+\vspace{1mm}
 \noindent{Автореферат разослан \synopsisDate.}
 
 %\noindent Телефон для справок: \defenseCouncilPhone.
 
-\vspace{0.008\paperheight plus1fill}
+\vspace{1px}
 \noindent%
 \begin{tabularx}{\textwidth}{@{}%
 >{\raggedright\arraybackslash}b{18em}@{}
@@ -85,12 +87,12 @@
 r
 @{}}
     Ученый секретарь\par
-    диссертационного совета\par
+    диссертационного совета
     \defenseCouncilNumber,\par
     \defenseSecretaryRegalia
     &
     \ifnumequal{\value{showsecrsign}}{0}{}{%
-        \includegraphics[width=2cm]{secretary-signature.png}%
+        %\includegraphics[width=2cm]{secretary-signature.png}%
     }%
     &
     \defenseSecretaryFio
