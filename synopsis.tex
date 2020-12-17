@@ -3,11 +3,9 @@
 \PassOptionsToPackage{bookmarks=false}{hyperref}
 \documentclass[a5paper,10pt,twoside,openany,article]{memoir} %,draft
 
-\input{common/setup}          % общие настройки шаблона
 \input{common/packages}       % Пакеты общие для диссертации и автореферата
 \synopsistrue                 % Этот документ --- автореферат
 \input{Synopsis/synpackages}  % Пакеты для автореферата
-\input{Synopsis/userpackages} % Пакеты для специфических пользовательских задач
 
 \input{common/newnames}       % Новые переменные, которые могут использоваться во всём проекте
 \input{Synopsis/setup}        % Упрощённые настройки шаблона 
@@ -16,7 +14,7 @@
 \input{common/styles}         % Стили общие для диссертации и автореферата
 \input{Synopsis/synstyles}    % Стили для автореферата
 \input{Synopsis/userstyles}   % Стили для специфических пользовательских задач
-\input{biblio/bibliopreamble} % Настройки библиографии из внешнего файла (там же выбор: встроенная или на основе biblatex)
+\input{biblio/predefined} % Настройки библиографии из внешнего файла (там же выбор: встроенная или на основе biblatex)
 
 \begin{document}
 
